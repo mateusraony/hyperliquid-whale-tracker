@@ -33,9 +33,10 @@ WALLETS = {
 
 # ===== CONFIGURAÇÕES DE ALERTAS =====
 ALERT_SETTINGS = {
-    "liquidation_threshold": 10,  # Alerta quando estiver a X% da liquidação
+    "liquidation_threshold": 2,  # Alerta quando estiver a 2% da liquidação
     "check_interval": 10,  # Verifica a cada X segundos
-    "min_position_value": 1000,  # Só alerta posições acima de $1000
+    "min_position_value": 5000,  # Só alerta posições acima de $5000 (evita spam de trades pequenos)
+    "alert_cooldown": 60,  # Tempo mínimo entre alertas da mesma wallet (segundos) - ANTI-SPAM
 }
 
 # ===== MENSAGENS PERSONALIZADAS =====
