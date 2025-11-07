@@ -35,8 +35,10 @@ class WhaleTracker:
         return datetime.now(BRT).strftime('%H:%M:%S')
     
     def get_wallet_link(self, address):
-        """Retorna link do Hypurrscan para a wallet"""
-        return f"https://hypurrscan.io/address/{address}"
+        """Retorna links do Hypurrscan e HyperDash para a wallet"""
+        hypurrscan = f"https://hypurrscan.io/address/{address}"
+        hyperdash = f"https://hyperdash.info/trader/{address}"
+        return hypurrscan, hyperdash
         
     async def start(self):
         """Inicia o monitoramento contínuo"""
@@ -132,13 +134,14 @@ class WhaleTracker:
         
         position_value = abs(size) * entry
         emoji = "🟢" if side == "long" else "🔴"
-        wallet_link = self.get_wallet_link(address)
+        hypurrscan_link, hyperdash_link = self.get_wallet_link(address)
         
         message = f"""
 {emoji} NOVA POSIÇÃO ABERTA!
 
 🐋 Wallet: {wallet_name}
-🔗 {wallet_link}
+🔗 Hypurrscan: {hypurrscan_link}
+🔗 HyperDash: {hyperdash_link}
 
 📊 Token: {coin}
 {'📈 LONG' if side == 'long' else '📉 SHORT'}
@@ -166,7 +169,7 @@ class WhaleTracker:
         
         is_liquidation = was_at_risk and loss_percentage < -50  # Perda > 50% + estava em risco = liquidação
         
-        wallet_link = self.get_wallet_link(address)
+        hypurrscan_link, hyperdash_link = self.get_wallet_link(address)
         
         if is_liquidation:
             # ALERTA DE LIQUIDAÇÃO
@@ -174,7 +177,8 @@ class WhaleTracker:
 💀💀 POSIÇÃO LIQUIDADA! 💀💀
 
 🐋 Wallet: {wallet_name}
-🔗 {wallet_link}
+🔗 Hypurrscan: {hypurrscan_link}
+🔗 HyperDash: {hyperdash_link}
 
 📊 Token: {coin}
 {'📈 LONG' if side == 'long' else '📉 SHORT'}
@@ -193,7 +197,8 @@ class WhaleTracker:
 {emoji} POSIÇÃO FECHADA!
 
 🐋 Wallet: {wallet_name}
-🔗 {wallet_link}
+🔗 Hypurrscan: {hypurrscan_link}
+🔗 HyperDash: {hyperdash_link}
 
 📊 Token: {coin}
 {'📈 LONG' if side == 'long' else '📉 SHORT'}
@@ -226,13 +231,14 @@ class WhaleTracker:
             # Verifica se JÁ ALERTOU sobre essa posição
             if pos_key not in self.positions_at_risk:
                 # PRIMEIRA VEZ em zona de perigo - ALERTA!
-                wallet_link = self.get_wallet_link(address)
+                hypurrscan_link, hyperdash_link = self.get_wallet_link(address)
                 
                 message = f"""
 ⚠️⚠️ ALERTA DE LIQUIDAÇÃO! ⚠️⚠️
 
 🐋 Wallet: {wallet_name}
-🔗 {wallet_link}
+🔗 Hypurrscan: {hypurrscan_link}
+🔗 HyperDash: {hyperdash_link}
 
 📊 Token: {position['coin']}
 {'📈 LONG' if position['side'] == 'long' else '📉 SHORT'}
