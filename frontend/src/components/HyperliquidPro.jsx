@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
-import { TrendingUp, TrendingDown, Bell, Activity, Target, Brain, Award, BarChart3, Clock, Users, Layers, Shield, PlayCircle, AlertTriangle, ExternalLink, Trash2, RefreshCw, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Bell, Activity, Target, Brain, Award, BarChart3, Clock, Users, Layers, Shield, PlayCircle, AlertTriangle, ExternalLink, Trash2, RefreshCw, ChevronDown, ChevronUp, X, Settings, Send, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import apiService from '../api-service';
 
 export default function HyperliquidPro() {
@@ -25,6 +25,17 @@ export default function HyperliquidPro() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [whaleToDelete, setWhaleToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Estados de configuração do Telegram
+  const [tgToken, setTgToken] = useState('');
+  const [tgChatId, setTgChatId] = useState('');
+  const [tgEnabled, setTgEnabled] = useState(true);
+  const [tgTokenMasked, setTgTokenMasked] = useState('');
+  const [tgConfigured, setTgConfigured] = useState(false);
+  const [tgSaving, setTgSaving] = useState(false);
+  const [tgSaved, setTgSaved] = useState(false);
+  const [tgError, setTgError] = useState(null);
+  const [showToken, setShowToken] = useState(false);
 
   // ============================================
   // FUNÇÕES DE API
@@ -66,9 +77,43 @@ export default function HyperliquidPro() {
   // Carregar dados ao montar
   useEffect(() => {
     loadWhalesData();
-    const interval = setInterval(loadWhalesData, 30000); // Atualizar a cada 30s
+    const interval = setInterval(loadWhalesData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const loadTelegramConfig = async () => {
+    try {
+      const cfg = await apiService.getTelegramConfig();
+      setTgConfigured(cfg.token_configured);
+      setTgTokenMasked(cfg.token_masked || '');
+      setTgChatId(cfg.chat_id || '');
+      setTgEnabled(cfg.enabled);
+    } catch (e) {
+      // silently ignore — backend may not have config yet
+    }
+  };
+
+  useEffect(() => {
+    loadTelegramConfig();
+  }, []);
+
+  const handleSaveTelegramConfig = async () => {
+    setTgSaving(true);
+    setTgError(null);
+    setTgSaved(false);
+    try {
+      await apiService.saveTelegramConfig({ token: tgToken || undefined, chatId: tgChatId || undefined, enabled: tgEnabled });
+      setTgSaved(true);
+      setTgToken('');
+      setShowToken(false);
+      await loadTelegramConfig();
+      setTimeout(() => setTgSaved(false), 4000);
+    } catch (e) {
+      setTgError(e.message);
+    } finally {
+      setTgSaving(false);
+    }
+  };
 
   // ============================================
   // CÁLCULOS GLOBAIS
@@ -204,6 +249,7 @@ export default function HyperliquidPro() {
               { id: 'risk', icon: Shield, label: 'Risk' },
               { id: 'simulator', icon: PlayCircle, label: 'Simulator' },
               { id: 'board', icon: Award, label: 'Leaderboard' },
+              { id: 'settings', icon: Settings, label: 'Settings' },
             ].map(t => {
               const Icon = t.icon;
               return (
@@ -495,6 +541,95 @@ export default function HyperliquidPro() {
             <p className="text-slate-400">
               A aba <span className="text-blue-400 font-bold">{tab}</span> será implementada em breve com dados reais da API
             </p>
+          </div>
+        )}
+
+        {/* ABA SETTINGS */}
+        {tab === 'settings' && (
+          <div className="max-w-xl mx-auto space-y-6">
+            <h2 className="text-lg font-bold flex items-center gap-2"><Settings className="w-5 h-5 text-blue-400" /> Configurações</h2>
+
+            {/* Card Telegram */}
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <Send className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Telegram Bot</h3>
+                    <p className="text-xs text-slate-400">Alertas de posições, liquidações e resumos</p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" checked={tgEnabled} onChange={e => setTgEnabled(e.target.checked)} />
+                  <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {tgConfigured && (
+                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 text-sm text-green-400">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  Token configurado: <span className="font-mono">{tgTokenMasked}</span>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Bot Token {tgConfigured && <span className="text-slate-500">(deixe vazio para manter o atual)</span>}</label>
+                  <div className="relative">
+                    <input
+                      type={showToken ? 'text' : 'password'}
+                      value={tgToken}
+                      onChange={e => setTgToken(e.target.value)}
+                      placeholder={tgConfigured ? '••••••••••••••' : 'Cole o token do @BotFather'}
+                      className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:border-blue-500"
+                    />
+                    <button onClick={() => setShowToken(v => !v)} className="absolute right-2 top-2 text-slate-400 hover:text-white">
+                      {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Chat ID</label>
+                  <input
+                    type="text"
+                    value={tgChatId}
+                    onChange={e => setTgChatId(e.target.value)}
+                    placeholder="Ex: -1001234567890 ou seu ID pessoal"
+                    className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Obtenha via @userinfobot no Telegram</p>
+                </div>
+              </div>
+
+              {tgError && (
+                <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-sm text-red-400">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {tgError}
+                </div>
+              )}
+
+              {tgSaved && (
+                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 text-sm text-green-400">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  Salvo! Você deve ter recebido uma mensagem de teste no Telegram.
+                </div>
+              )}
+
+              <button
+                onClick={handleSaveTelegramConfig}
+                disabled={tgSaving || (!tgToken && !tgChatId && tgEnabled === undefined)}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all"
+              >
+                {tgSaving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Salvando e testando...</> : <><Send className="w-4 h-4" /> Salvar e enviar teste</>}
+              </button>
+
+              <p className="text-xs text-slate-500">
+                As credenciais são salvas no banco de dados do servidor — não ficam no código nem nas env vars do Render.
+              </p>
+            </div>
           </div>
         )}
       </div>

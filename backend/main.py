@@ -15,6 +15,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from config.settings import FRONTEND_URL, TELEGRAM_ENABLED
 import db.database as db
 from services import hyperliquid as hl_service
+from services.telegram_service import telegram_bot
 from jobs import monitor as monitor_job
 from routes import whales as whales_router
 from routes import telegram as telegram_router
@@ -137,6 +138,8 @@ async def root():
             "GET /health": "Status da API",
             "GET /keep-alive": "Keep-alive para cron",
             "GET /telegram/status": "Status do Telegram",
+            "GET /telegram/config": "Ler configuração do Telegram (token mascarado)",
+            "POST /telegram/config": "Salvar token/chat_id do Telegram + enviar teste",
             "POST /telegram/send-resume": "Enviar resumo via Telegram",
             "GET /api/database/health": "Saúde do banco",
             "GET /api/database/backup": "Backup JSON",
@@ -172,6 +175,14 @@ async def startup_event():
             whales_router.init_state(KNOWN_WHALES, cache, alert_state, scheduler)
             telegram_router.init_state(alert_state, KNOWN_WHALES, scheduler)
             print(f"✅ Estado de alertas restaurado: {len(alert_state['positions'])} posições")
+            tg_cfg = alert_state.get("telegram_config")
+            if tg_cfg:
+                telegram_bot.reconfigure(
+                    token=tg_cfg.get("token") or None,
+                    chat_id=tg_cfg.get("chat_id") or None,
+                    enabled=tg_cfg.get("enabled"),
+                )
+                print("✅ Config Telegram restaurada do banco")
         else:
             print("📝 Iniciando estado de alertas do zero")
     else:
