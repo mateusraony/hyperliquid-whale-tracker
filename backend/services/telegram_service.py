@@ -27,6 +27,15 @@ class TelegramBot:
         self.base_url = f"https://api.telegram.org/bot{token}"
         self.enabled = TELEGRAM_ENABLED
 
+    def reconfigure(self, token: str = None, chat_id: str = None, enabled: bool = None):
+        if token is not None:
+            self.token = token
+            self.base_url = f"https://api.telegram.org/bot{token}"
+        if chat_id is not None:
+            self.chat_id = chat_id
+        if enabled is not None:
+            self.enabled = enabled
+
     async def send_message(self, text: str):
         if not self.enabled:
             print(f"[TELEGRAM DISABLED] {text[:50]}...")

@@ -120,15 +120,27 @@ async function sendResume() {
   });
 }
 
+async function getTelegramConfig() {
+  return fetchWithRetry(`${API_CONFIG.API_BASE_URL}/telegram/config`);
+}
+
+async function saveTelegramConfig({ token, chatId, enabled }) {
+  return fetchWithRetry(`${API_CONFIG.API_BASE_URL}/telegram/config`, {
+    method: 'POST',
+    body: JSON.stringify({ token: token || null, chat_id: chatId || null, enabled }),
+  });
+}
+
 const apiService = {
   getWhales,
   addWhale,
   deleteWhale,
   getHealth,
   sendResume,
+  getTelegramConfig,
+  saveTelegramConfig,
 };
 
 export default apiService;
 
-// Named exports para uso individual
-export { getWhales, addWhale, deleteWhale, getHealth, sendResume };
+export { getWhales, addWhale, deleteWhale, getHealth, sendResume, getTelegramConfig, saveTelegramConfig };
