@@ -108,6 +108,8 @@ async def check_and_alert_positions(whale_data: dict):
             await db.save_open_trade(address, nickname, position)
 
         else:
+            # Update snapshot so close alerts use current PnL/size/liquidation price
+            _alert_state["positions"][pos_key] = position
             pos_value = safe_float(position.get("positionValue", 0))
             szi = safe_float(position.get("szi", 1))
             current_px = pos_value / abs(szi) if szi != 0 else 0
@@ -144,6 +146,8 @@ async def check_and_alert_positions(whale_data: dict):
         coin = pos_key.split("_", 1)[1]
         if coin not in current_coins:
             closed = _alert_state["positions"].pop(pos_key)
+            # Check before discarding so is_liq detection works
+            was_at_risk = pos_key in _alert_state["liquidation_warnings"]
             _alert_state["liquidation_warnings"].discard(pos_key)
 
             side = closed.get("side", "").upper()
@@ -152,7 +156,6 @@ async def check_and_alert_positions(whale_data: dict):
             entry_px = safe_float(closed.get("entryPx", 1))
             pos_value = abs(szi) * entry_px
             loss_pct = (unrealized / pos_value * 100) if pos_value > 0 else 0
-            was_at_risk = pos_key in _alert_state["liquidation_warnings"]
             is_liq = was_at_risk and loss_pct < -50
 
             if is_liq:
@@ -262,14 +265,21 @@ async def check_and_alert_orders(whale_data: dict):
 async def fetch_whale_data(address: str, nickname: str = None) -> dict:
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(
-                "https://api.hyperliquid.xyz/info",
-                json={"type": "clearinghouseState", "user": address},
+            state_resp, orders_resp = await asyncio.gather(
+                client.post(
+                    "https://api.hyperliquid.xyz/info",
+                    json={"type": "clearinghouseState", "user": address},
+                ),
+                client.post(
+                    "https://api.hyperliquid.xyz/info",
+                    json={"type": "openOrders", "user": address},
+                ),
             )
-            if resp.status_code != 200:
-                raise Exception(f"API HTTP {resp.status_code}")
+            if state_resp.status_code != 200:
+                raise Exception(f"clearinghouseState HTTP {state_resp.status_code}")
 
-            data = resp.json()
+            data = state_resp.json()
+            raw_orders = orders_resp.json() if orders_resp.status_code == 200 else []
             market_prices = _cache.get("market_prices", {})
 
             positions = []
@@ -281,7 +291,7 @@ async def fetch_whale_data(address: str, nickname: str = None) -> dict:
                 mark_px = market_prices.get(coin, 0)
                 positions.append({
                     "coin": coin,
-                    "side": p.get("szi", "0")[0] if p.get("szi", "0") else "0",
+                    "side": "LONG" if safe_float(p.get("szi", "0")) > 0 else "SHORT",
                     "size": abs(safe_float(p.get("szi", 0))),
                     "szi": p.get("szi", "0"),
                     "entryPx": p.get("entryPx", "0"),
@@ -300,7 +310,7 @@ async def fetch_whale_data(address: str, nickname: str = None) -> dict:
                     "limitPx": o.get("limitPx", "0"),
                     "oid": o.get("oid", ""),
                 }
-                for o in data.get("openOrders", [])
+                for o in (raw_orders if isinstance(raw_orders, list) else [])
             ]
 
             total_value = sum(abs(safe_float(p.get("positionValue", 0))) for p in positions)
