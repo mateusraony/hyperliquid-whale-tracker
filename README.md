@@ -1,135 +1,90 @@
-# 🐋 HYPERLIQUID WHALE TRACKER - SISTEMA COMPLETO
+# Hyperliquid Whale Tracker — Monorepo
 
-Sistema de monitoramento 24/7 com alertas automáticos no Telegram.
-**100% GRATUITO - 0 custos mensais**
+Dashboard de monitoramento de grandes posições (whales) na exchange descentralizada Hyperliquid.
 
----
+## Estrutura
 
-## 🎯 O QUE FAZ
-
-✅ Monitora wallets da Hyperliquid em tempo real  
-✅ Detecta novas posições (LONG/SHORT)  
-✅ Alerta quando posições são fechadas (lucro/prejuízo)  
-✅ Avisa sobre risco de liquidação  
-✅ Alertas ilimitados no Telegram  
-✅ Roda 24/7 automaticamente  
-
----
-
-## 🚀 COMO SUBIR NO RENDER.COM (5 MINUTOS)
-
-### PASSO 1: Preparar arquivos
-
-1. Baixe todos os arquivos desta pasta
-2. Crie uma conta no GitHub (se não tiver)
-3. Crie um repositório novo (pode ser privado)
-4. Faça upload de todos os arquivos para o GitHub
-
-### PASSO 2: Deploy no Render
-
-1. Entre em: https://render.com
-2. Clique em **"New +"** → **"Web Service"**
-3. Conecte seu GitHub
-4. Selecione o repositório que você criou
-5. Configure assim:
-
-**Build Command:**
 ```
-pip install -r requirements.txt
+hyperliquid-whale-tracker/
+├── frontend/                   # React 18 + Tailwind + Recharts
+├── backend/                    # FastAPI + PostgreSQL + APScheduler
+│   ├── config/settings.py      # variáveis de ambiente centralizadas
+│   ├── db/database.py          # pool asyncpg + tabelas
+│   ├── models/schemas.py       # modelos Pydantic
+│   ├── services/               # Hyperliquid API + Telegram Bot
+│   ├── jobs/monitor.py         # job APScheduler (30s)
+│   └── routes/                 # endpoints REST
+├── docs/
+│   ├── legacy/tracker-v1/      # código original do tracker Python simples
+│   ├── local-dev.md
+│   └── render-deploy.md
+├── render.yaml                 # blueprint Render (backend + frontend + db)
+└── .env.example                # template de variáveis de ambiente
 ```
 
-**Start Command:**
-```
-python main.py
-```
+## Deploy rápido
 
-**Environment:** `Python 3`
+Veja [docs/render-deploy.md](docs/render-deploy.md) para deploy no Render.com.
 
-**Instance Type:** `Free`
+Veja [docs/local-dev.md](docs/local-dev.md) para rodar localmente.
 
-6. Clique em **"Create Web Service"**
+## Endpoints
 
-### PASSO 3: Pronto! 🎉
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/health` | status do sistema |
+| GET | `/keep-alive` | evita sleep no Render free tier |
+| GET | `/whales` | lista de whales monitoradas |
+| POST | `/whales` | adicionar whale |
+| DELETE | `/whales/{address}` | remover whale |
+| GET | `/whales/{address}` | dados de uma whale |
+| GET | `/telegram/status` | status do bot Telegram |
+| POST | `/telegram/send-resume` | enviar resumo via Telegram |
+| GET | `/api/database/health` | saúde do banco de dados |
+| GET | `/api/database/backup` | exportar backup JSON |
+| GET | `/api/database/trades` | histórico de trades |
+| GET | `/api/ai/whale-scores` | scores das whales |
+| GET | `/api/ai/market-sentiment` | sentimento de mercado |
+| GET | `/api/ai/whale-correlation` | correlação entre whales |
+| GET | `/api/ai/predictive-signals` | sinais preditivos |
 
-O sistema vai começar a rodar automaticamente!
-Você vai receber um alerta no Telegram confirmando que está online.
+## Variáveis de ambiente
 
----
+Copie `.env.example` e preencha com suas credenciais:
 
-## ✏️ COMO EDITAR NOMES DAS WALLETS
-
-Abra o arquivo `config.py` e edite a seção `WALLETS`:
-
-```python
-WALLETS = {
-    "0x8c58...": "Minha Whale Favorita",  # ← Mude o nome aqui
-    "0x939f...": "Trader Profissa",       # ← E aqui
-    # ...
-}
-```
-
-Depois faça commit no GitHub e o Render atualiza automaticamente!
-
----
-
-## 🔔 TIPOS DE ALERTAS QUE VOCÊ RECEBERÁ
-
-### 1️⃣ Nova Posição Aberta
-```
-🟢 NOVA POSIÇÃO ABERTA!
-🐋 Wallet: Sigma Whale
-📊 Token: BTC
-📈 LONG
-💰 Tamanho: $125,000
-🎯 Alavancagem: 12x
-📍 Entry: $67,234
+```bash
+cp .env.example .env.local
 ```
 
-### 2️⃣ Posição Fechada
-```
-✅ POSIÇÃO FECHADA!
-🐋 Wallet: Sigma Whale
-📊 Token: BTC
-💵 PnL: +$20,482
-🎯 Resultado: LUCRO
-```
+Nunca commite credenciais reais. Veja `.env.example` para a lista completa.
 
-### 3️⃣ Alerta de Liquidação
-```
-⚠️⚠️ ALERTA DE LIQUIDAÇÃO!
-🐋 Wallet: Sigma Whale
-📉 Preço Atual: $66,890
-💀 Liquidação: $61,450
-🚨 Distância: 8.1%
-```
+## Checklist de migração
 
----
+### Migrado
+- Todos os 14 endpoints do backend
+- Monitoramento automático (APScheduler, 30s) sem worker externo
+- Integração Telegram
+- PostgreSQL + 4 tabelas (trades, liquidations, wallet_snapshots, alert_state)
+- Frontend React com auto-refresh e dashboard completo
 
-## 📊 WALLETS MONITORADAS
+### Corrigido
+- CORS aberto `["*"]` → restrito a `FRONTEND_URL` (env var)
+- Credenciais hardcoded → env vars obrigatórias (sem fallbacks de token real)
+- URL hardcoded no frontend → `process.env.REACT_APP_API_URL`
+- Endpoints quebrados `/monitoring/*` → removidos; substituído por `/health`
+- Import path do frontend (`./api-service` → `../api-service`)
+- Default export ausente em `api-service.js`
+- Mismatch de campos backend/frontend → `normalizeWhale()` em `api-service.js`
 
-Você está monitorando **14 wallets**:
-- 11 suas wallets personalizadas
-- 3 whales famosas da Hyperliquid
+### Legado (preservado)
+- `docs/legacy/tracker-v1/` — tracker Python simples original (loop async, sem banco, sem FastAPI)
 
----
+### Marcado como mock
+- `liquidationData` no frontend (valores 1D/7D/1M fixos) — marcado como `[MOCK DATA]`, TODO: conectar a `/api/database/trades`
 
-## ⚙️ CONFIGURAÇÕES
-
-Edite em `config.py`:
-
-- `liquidation_threshold`: Distância % para alertar liquidação
-- `check_interval`: Intervalo de verificação (segundos)
-- `min_position_value`: Valor mínimo de posição para alertar
-
----
-
-## 🆘 SUPORTE
-
-Se tiver algum problema, me chame que eu te ajudo!
-
----
-
-## 🎉 PRONTO!
-
-Seu sistema está rodando 24/7 gratuitamente!
-Você vai receber TODOS os alertas automaticamente no Telegram.
+### Configurar no Render após deploy
+- `TELEGRAM_BOT_TOKEN` — novo token (revogar o anterior que estava exposto)
+- `TELEGRAM_CHAT_ID`
+- `FRONTEND_URL` — URL do frontend no Render
+- `REACT_APP_API_URL` — URL do backend no Render
+- `DATABASE_URL` — injetado automaticamente pelo Render se usar banco interno
