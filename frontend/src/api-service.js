@@ -131,6 +131,28 @@ async function saveTelegramConfig({ token, chatId, enabled }) {
   });
 }
 
+async function getTrades(limit = 100, wallet = null) {
+  const params = new URLSearchParams({ limit });
+  if (wallet) params.append('wallet', wallet);
+  return fetchWithRetry(`${API_CONFIG.API_BASE_URL}/api/database/trades?${params}`);
+}
+
+async function getAiWhaleScores() {
+  return fetchWithRetry(`${API_CONFIG.API_BASE_URL}/api/ai/whale-scores`);
+}
+
+async function getMarketSentiment() {
+  return fetchWithRetry(`${API_CONFIG.API_BASE_URL}/api/ai/market-sentiment`);
+}
+
+async function getWhaleCorrelation() {
+  return fetchWithRetry(`${API_CONFIG.API_BASE_URL}/api/ai/whale-correlation`);
+}
+
+async function getPredictiveSignals() {
+  return fetchWithRetry(`${API_CONFIG.API_BASE_URL}/api/ai/predictive-signals`);
+}
+
 const apiService = {
   getWhales,
   addWhale,
@@ -139,8 +161,17 @@ const apiService = {
   sendResume,
   getTelegramConfig,
   saveTelegramConfig,
+  getTrades,
+  getAiWhaleScores,
+  getMarketSentiment,
+  getWhaleCorrelation,
+  getPredictiveSignals,
 };
 
 export default apiService;
 
-export { getWhales, addWhale, deleteWhale, getHealth, sendResume, getTelegramConfig, saveTelegramConfig };
+export {
+  getWhales, addWhale, deleteWhale, getHealth, sendResume,
+  getTelegramConfig, saveTelegramConfig,
+  getTrades, getAiWhaleScores, getMarketSentiment, getWhaleCorrelation, getPredictiveSignals,
+};
