@@ -57,9 +57,17 @@ const tierBadge = (tier) => ({
 function generateInsight(whalesData, globalMetrics) {
   if (!whalesData.length) return null;
   const { totalLongs, totalShorts, totalPositions, totalPnl, totalValue } = globalMetrics;
-  const bullPct = totalPositions > 0 ? (totalLongs / totalPositions) * 100 : 0;
   const highRisk = whalesData.filter(w => w.liquidation_risk === 'Alto').length;
   const pnlRatio = totalValue > 0 ? (totalPnl / totalValue) * 100 : 0;
+
+  if (totalPositions === 0) return {
+    color: 'blue',
+    icon: '📡',
+    title: 'Nenhuma posição aberta no momento',
+    body: `${whalesData.length} whale(s) monitorada(s), mas sem posições ativas agora.`,
+  };
+
+  const bullPct = (totalLongs / totalPositions) * 100;
 
   if (highRisk >= 2) return {
     color: 'red',
