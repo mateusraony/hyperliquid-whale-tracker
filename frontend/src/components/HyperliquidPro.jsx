@@ -1280,7 +1280,8 @@ export default function HyperliquidPro() {
             </div>
             <p className="text-slate-300 mb-6">
               Remover a whale{' '}
-              <span className="font-mono text-blue-400">{whaleToDelete?.nickname || fmtAddr(whaleToDelete?.address)}</span>?
+              {whaleToDelete?.nickname && <span className="font-semibold">{whaleToDelete.nickname}</span>}{' '}
+              <span className="font-mono text-blue-400">{fmtAddr(whaleToDelete?.address)}</span>?
             </p>
             <div className="flex gap-3">
               <button onClick={() => { setShowDeleteModal(false); setWhaleToDelete(null); }}
