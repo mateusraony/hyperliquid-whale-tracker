@@ -1,10 +1,10 @@
 """
 Hyperliquid Whale Tracker API — v7.0
-App factory: configura CORS, registra rotas, inicia scheduler e banco de dados.
 """
 
 import json
-from datetime import datetime
+import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -83,81 +83,11 @@ alert_state: dict = {
 scheduler = AsyncIOScheduler()
 
 # ============================================
-# App
+# Lifespan (substitui o on_event deprecado)
 # ============================================
 
-app = FastAPI(
-    title="Hyperliquid Whale Tracker API",
-    version="7.0",
-    description="Monitoramento 24/7 de whales na Hyperliquid com AI analytics.",
-)
-
-# CORS restrito ao domínio do frontend (configurado via FRONTEND_URL env var)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ============================================
-# Inicialização do estado compartilhado
-# ============================================
-
-hl_service.init_state(cache, alert_state, KNOWN_WHALES)
-monitor_job.init_state(cache)
-whales_router.init_state(KNOWN_WHALES, cache, alert_state, scheduler)
-telegram_router.init_state(alert_state, KNOWN_WHALES, scheduler)
-ai_router.init_state(cache)
-
-# ============================================
-# Rotas
-# ============================================
-
-app.include_router(whales_router.router)
-app.include_router(telegram_router.router)
-app.include_router(db_router.router)
-app.include_router(ai_router.router)
-
-
-@app.get("/")
-async def root():
-    return {
-        "message": "Hyperliquid Whale Tracker API",
-        "version": "7.0 - AI WALLET TAB",
-        "telegram_enabled": TELEGRAM_ENABLED,
-        "database_enabled": db.db_pool is not None,
-        "total_whales": len(KNOWN_WHALES),
-        "scheduler_running": scheduler.running,
-        "endpoints": {
-            "GET /whales": "Lista todas as whales com métricas",
-            "GET /whales/{address}": "Dados de uma whale",
-            "POST /whales": "Adicionar whale",
-            "DELETE /whales/{address}": "Remover whale",
-            "GET /health": "Status da API",
-            "GET /keep-alive": "Keep-alive para cron",
-            "GET /telegram/status": "Status do Telegram",
-            "GET /telegram/config": "Ler configuração do Telegram (token mascarado)",
-            "POST /telegram/config": "Salvar token/chat_id do Telegram + enviar teste",
-            "POST /telegram/send-resume": "Enviar resumo via Telegram",
-            "GET /api/database/health": "Saúde do banco",
-            "GET /api/database/backup": "Backup JSON",
-            "GET /api/database/trades": "Histórico de trades",
-            "GET /api/ai/whale-scores": "Intelligence scores",
-            "GET /api/ai/market-sentiment": "Sentiment do mercado",
-            "GET /api/ai/whale-correlation": "Matriz de correlação",
-            "GET /api/ai/predictive-signals": "Sinais preditivos",
-        },
-    }
-
-
-# ============================================
-# Startup / Shutdown
-# ============================================
-
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global alert_state
 
     print("🚀 Hyperliquid Whale Tracker API v7.0")
@@ -204,9 +134,8 @@ async def startup_event():
 
     await monitor_job.monitor_whales_job()
 
+    yield  # aplicação roda aqui
 
-@app.on_event("shutdown")
-async def shutdown_event():
     print("\n🛑 Desligando sistema...")
     if db.db_pool:
         await db.save_alert_state(alert_state)
@@ -217,6 +146,83 @@ async def shutdown_event():
     print("👋 Sistema desligado com sucesso!")
 
 
+# ============================================
+# App
+# ============================================
+
+app = FastAPI(
+    title="Hyperliquid Whale Tracker API",
+    version="7.0",
+    description="Monitoramento 24/7 de whales na Hyperliquid com AI analytics.",
+    lifespan=lifespan,
+)
+
+# CORS: aceita FRONTEND_URL explicitamente + qualquer subdomínio *.onrender.com
+# automaticamente (sem precisar configurar env var no Render)
+_cors_origins = [FRONTEND_URL, "http://localhost:3000"]
+_cors_origin_regex = r"https://.*\.onrender\.com"
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(set(_cors_origins)),
+    allow_origin_regex=_cors_origin_regex,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ============================================
+# Inicialização do estado compartilhado
+# ============================================
+
+hl_service.init_state(cache, alert_state, KNOWN_WHALES)
+monitor_job.init_state(cache)
+whales_router.init_state(KNOWN_WHALES, cache, alert_state, scheduler)
+telegram_router.init_state(alert_state, KNOWN_WHALES, scheduler)
+ai_router.init_state(cache)
+
+# ============================================
+# Rotas
+# ============================================
+
+app.include_router(whales_router.router)
+app.include_router(telegram_router.router)
+app.include_router(db_router.router)
+app.include_router(ai_router.router)
+
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Hyperliquid Whale Tracker API",
+        "version": "7.0",
+        "telegram_enabled": TELEGRAM_ENABLED,
+        "database_enabled": db.db_pool is not None,
+        "total_whales": len(KNOWN_WHALES),
+        "scheduler_running": scheduler.running,
+        "endpoints": {
+            "GET /whales": "Lista todas as whales com métricas",
+            "GET /whales/{address}": "Dados de uma whale",
+            "POST /whales": "Adicionar whale",
+            "DELETE /whales/{address}": "Remover whale",
+            "GET /health": "Status da API",
+            "GET /keep-alive": "Keep-alive para cron",
+            "GET /telegram/status": "Status do Telegram",
+            "GET /telegram/config": "Ler configuração do Telegram",
+            "POST /telegram/config": "Salvar token/chat_id do Telegram",
+            "POST /telegram/send-resume": "Enviar resumo via Telegram",
+            "GET /api/database/health": "Saúde do banco",
+            "GET /api/database/backup": "Backup JSON",
+            "GET /api/database/trades": "Histórico de trades",
+            "GET /api/ai/whale-scores": "Intelligence scores",
+            "GET /api/ai/market-sentiment": "Sentiment do mercado",
+            "GET /api/ai/whale-correlation": "Matriz de correlação",
+            "GET /api/ai/predictive-signals": "Sinais preditivos",
+        },
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
