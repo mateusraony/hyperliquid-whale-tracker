@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, LineChart, Line, BarChart, Bar, Cell,
   RadialBarChart, RadialBar,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -29,9 +29,28 @@ const fmtFull = (v) =>
 
 const fmtAddr = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
 
+const parseTs = (ts) => {
+  if (!ts) return null;
+  // If no timezone suffix, treat as UTC (backend stores UTC without Z)
+  const s = String(ts);
+  const d = new Date(/[Zz+\-]\d{0,2}:?\d{0,2}$/.test(s) ? s : s + 'Z');
+  return isNaN(d.getTime()) ? null : d;
+};
+
 const fmtDate = (ts) => {
-  if (!ts) return '—';
-  try { return new Date(ts).toLocaleString('pt-BR'); } catch { return ts; }
+  const d = parseTs(ts);
+  if (!d) return '—';
+  return d.toLocaleString('pt-BR');
+};
+
+const fmtRel = (ts) => {
+  const d = parseTs(ts);
+  if (!d) return '—';
+  const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diff < 60)   return `há ${diff}s`;
+  if (diff < 3600) return `há ${Math.floor(diff / 60)}min`;
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`;
+  return d.toLocaleDateString('pt-BR');
 };
 
 const pnlClass = (v) => (v >= 0 ? 'text-emerald-400' : 'text-red-400');
@@ -54,58 +73,39 @@ const tierBadge = (tier) => ({
   'D-Tier': 'bg-red-500/20 text-red-300 border border-red-500/40',
 }[tier] || 'bg-slate-600/20 text-slate-400');
 
-// auto-generated insight from live data
-function generateInsight(whalesData, globalMetrics) {
+// narrative insight — plain language summary of what whales are doing right now
+function generateNarrative(whalesData, globalMetrics) {
   if (!whalesData.length) return null;
   const { totalLongs, totalShorts, totalPositions, totalPnl, totalValue } = globalMetrics;
   const highRisk = whalesData.filter(w => w.liquidation_risk === 'Alto').length;
+  const medRisk  = whalesData.filter(w => w.liquidation_risk === 'Médio').length;
   const pnlRatio = totalValue > 0 ? (totalPnl / totalValue) * 100 : 0;
+  const bullPct  = totalPositions > 0 ? (totalLongs / totalPositions) * 100 : 50;
 
-  if (totalPositions === 0) return {
-    color: 'blue',
-    icon: '📡',
-    title: 'Nenhuma posição aberta no momento',
-    body: `${whalesData.length} whale(s) monitorada(s), mas sem posições ativas agora.`,
-  };
+  // top coins by position count
+  const coinCount = {};
+  whalesData.forEach(w => (w.active_positions || []).forEach(p => {
+    coinCount[p.coin] = (coinCount[p.coin] || 0) + 1;
+  }));
+  const topCoins = Object.entries(coinCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c);
 
-  const bullPct = (totalLongs / totalPositions) * 100;
+  const direction = bullPct >= 60 ? 'COMPRANDO' : bullPct <= 40 ? 'VENDENDO' : 'divididas';
+  const dirEmoji  = bullPct >= 60 ? '🟢' : bullPct <= 40 ? '🔴' : '🟡';
+  const dirColor  = bullPct >= 60 ? 'emerald' : bullPct <= 40 ? 'red' : 'amber';
+  const pnlStr    = `${totalPnl >= 0 ? '+' : ''}${fmt(totalPnl)}`;
+  const pnlWord   = totalPnl >= 0 ? 'lucro' : 'prejuízo';
 
-  if (highRisk >= 2) return {
-    color: 'red',
-    icon: '⚠️',
-    title: `${highRisk} whales com risco ALTO de liquidação`,
-    body: 'Posições perigosamente próximas ao preço de liquidação. Monitore com atenção.',
-  };
-  if (bullPct >= 70) return {
-    color: 'emerald',
-    icon: '🟢',
-    title: `Forte viés de alta — ${bullPct.toFixed(0)}% das posições são LONG`,
-    body: `Whales estão majoritariamente compradas. PnL agregado: ${fmt(totalPnl)}.`,
-  };
-  if (bullPct <= 30) return {
-    color: 'red',
-    icon: '🔴',
-    title: `Viés de baixa dominante — ${(100 - bullPct).toFixed(0)}% das posições são SHORT`,
-    body: 'Smart money apostando em queda. Considere cautela em posições longas.',
-  };
-  if (pnlRatio > 3) return {
-    color: 'emerald',
-    icon: '💰',
-    title: 'Whales em lucro significativo',
-    body: `PnL não realizado de ${fmt(totalPnl)} (${pnlRatio.toFixed(1)}% do portfólio total).`,
-  };
-  if (pnlRatio < -3) return {
-    color: 'amber',
-    icon: '🟡',
-    title: 'Portfólio agregado em prejuízo',
-    body: `Perda não realizada de ${fmt(totalPnl)}. Possível pressão de venda à frente.`,
-  };
-  return {
-    color: 'blue',
-    icon: '📊',
-    title: `Mercado neutro — ${totalPositions} posições ativas em ${whalesData.length} whales`,
-    body: `Distribuição equilibrada: ${totalLongs} LONG / ${totalShorts} SHORT.`,
-  };
+  const sentences = [];
+  if (totalPositions === 0) {
+    sentences.push(`As ${whalesData.length} baleias monitoradas não têm posições abertas agora — aguardando oportunidade.`);
+  } else {
+    sentences.push(`As baleias estão ${direction} agora mesmo: ${totalLongs} apostando em ALTA e ${totalShorts} em QUEDA${topCoins.length ? ` — moedas mais negociadas: ${topCoins.join(', ')}` : ''}.`);
+    sentences.push(`O portfólio total está ${pnlWord === 'lucro' ? 'em lucro de' : 'perdendo'} ${pnlStr} (${pnlRatio >= 0 ? '+' : ''}${pnlRatio.toFixed(1)}% do capital total de ${fmt(totalValue)}).`);
+  }
+  if (highRisk >= 1) sentences.push(`⚠️ ${highRisk} balei${highRisk > 1 ? 'as' : 'a'} com risco ALTO de liquidação — posições próximas ao limite de perda.`);
+  else if (medRisk >= 2) sentences.push(`${medRisk} baleias com risco médio de liquidação — atenção.`);
+
+  return { color: dirColor, emoji: dirEmoji, direction, bullPct, text: sentences.join(' ') };
 }
 
 function buildActivityFeed(whalesData) {
@@ -285,6 +285,7 @@ const CHART_STYLE = {
 
 export default function HyperliquidPro() {
   const [tab, setTab] = useState('command');
+  // eslint-disable-next-line no-unused-vars
   const [expandedMetric, setExpandedMetric] = useState(null);
   const [systemStatus, setSystemStatus] = useState('online');
 
@@ -483,13 +484,8 @@ export default function HyperliquidPro() {
     totalShorts:    whalesData.reduce((s, w) => s + (w.active_positions?.filter(p => p.size < 0).length || 0), 0),
   };
 
-  const insight = generateInsight(whalesData, globalMetrics);
+  const narrative = generateNarrative(whalesData, globalMetrics);
 
-  const liquidationData = {
-    '1D': { total: 2_340_000, trades: 12, profit: 450_000, longs: 8,   shorts: 4  },
-    '7D': { total: 8_920_000, trades: 67, profit: 1_890_000, longs: 42, shorts: 25 },
-    '1M': { total: 24_500_000, trades: 234, profit: 4_870_000, longs: 145, shorts: 89 },
-  };
 
   const allOrders = whalesData.flatMap(w => (w.orders || []).map(o => ({ ...o, whale: w })));
 
@@ -694,301 +690,220 @@ export default function HyperliquidPro() {
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
                 {/* ── LEFT COLUMN (2/3) ─────────────────────────────────── */}
-                <div className="xl:col-span-2 space-y-4">
+                <div className="xl:col-span-2 space-y-5">
 
-                {/* AI Insight Banner */}
-                {insight && (
-                  <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border-l-2 border ${
-                    insight.color === 'emerald' ? 'bg-emerald-500/5 border-l-emerald-500 border-emerald-500/10' :
-                    insight.color === 'red'     ? 'bg-red-500/5 border-l-red-500 border-red-500/10' :
-                    insight.color === 'amber'   ? 'bg-amber-500/5 border-l-amber-500 border-amber-500/10' :
-                                                  'bg-cyan-500/5 border-l-cyan-500 border-cyan-500/10'
-                  }`}>
-                    <span className="text-xl leading-none mt-0.5">{insight.icon}</span>
-                    <div>
-                      <p className={`font-bold text-sm ${
-                        insight.color === 'emerald' ? 'text-emerald-300' :
-                        insight.color === 'red'     ? 'text-red-300' :
-                        insight.color === 'amber'   ? 'text-amber-300' :
-                                                      'text-cyan-300'
-                      }`}>{insight.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{insight.body}</p>
-                    </div>
-                  </div>
-                )}
+                  {/* HERO — 3 status cards, immediately readable */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-                {/* GlowCards — 5 main metrics */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                  <GlowCard label="Portfolio Total" icon={Wallet}
-                    value={fmt(globalMetrics.totalValue)}
-                    sub={`${globalMetrics.totalWhales} whales`}
-                    color="emerald"
-                    sparkData={valueHistory}
-                    sparkColor="#10b981" />
-                  <GlowCard label="PnL Não Realizado" icon={globalMetrics.totalPnl >= 0 ? TrendingUp : TrendingDown}
-                    value={fmt(globalMetrics.totalPnl)}
-                    sub={globalMetrics.totalPnl >= 0 ? 'Em lucro' : 'Em prejuízo'}
-                    color={globalMetrics.totalPnl >= 0 ? 'emerald' : 'red'}
-                    trend={globalMetrics.totalValue > 0 ? (globalMetrics.totalPnl / globalMetrics.totalValue) * 100 : 0}
-                    sparkData={pnlHistory}
-                    sparkColor={globalMetrics.totalPnl >= 0 ? '#10b981' : '#ef4444'} />
-                  <GlowCard label="Posições Abertas" icon={BarChart3}
-                    value={globalMetrics.totalPositions}
-                    sub="posições ativas"
-                    color="cyan" />
-                  <GlowCard label="LONG" icon={ArrowUpRight}
-                    value={globalMetrics.totalLongs}
-                    sub={`${globalMetrics.totalPositions > 0 ? ((globalMetrics.totalLongs / globalMetrics.totalPositions) * 100).toFixed(0) : 0}% do total`}
-                    color="emerald" />
-                  <GlowCard label="SHORT" icon={ArrowDownRight}
-                    value={globalMetrics.totalShorts}
-                    sub={`${globalMetrics.totalPositions > 0 ? ((globalMetrics.totalShorts / globalMetrics.totalPositions) * 100).toFixed(0) : 0}% do total`}
-                    color="orange" />
-                </div>
-
-                {/* LONG/SHORT momentum bar — full width, prominent */}
-                {globalMetrics.totalPositions > 0 && (() => {
-                  const lPct = (globalMetrics.totalLongs / globalMetrics.totalPositions) * 100;
-                  const sPct = 100 - lPct;
-                  const bias = lPct >= 60 ? 'Alta dominante' : lPct <= 40 ? 'Baixa dominante' : 'Mercado neutro';
-                  const biasColor = lPct >= 60 ? 'text-emerald-400' : lPct <= 40 ? 'text-red-400' : 'text-slate-400';
-                  return (
-                    <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Momentum de Mercado</p>
-                        <span className={`text-xs font-bold ${biasColor}`}>{bias}</span>
-                      </div>
-                      <div className="flex h-3 rounded-full overflow-hidden gap-0.5 mb-2">
-                        <div className="bg-emerald-500 rounded-l-full transition-all duration-700 relative overflow-hidden"
-                          style={{ width: `${lPct}%` }}>
-                          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shine-sweep" />
+                    {/* Card 1: Direction (what are whales doing RIGHT NOW) */}
+                    {(() => {
+                      const lPct = globalMetrics.totalPositions > 0 ? (globalMetrics.totalLongs / globalMetrics.totalPositions) * 100 : 50;
+                      const isBuying  = lPct >= 55;
+                      const isSelling = lPct <= 45;
+                      const label = isBuying ? 'COMPRANDO' : isSelling ? 'VENDENDO' : 'DIVIDIDAS';
+                      const sub = isBuying
+                        ? `${globalMetrics.totalLongs} apostando em ALTA`
+                        : isSelling
+                        ? `${globalMetrics.totalShorts} apostando em QUEDA`
+                        : `${globalMetrics.totalLongs} alta · ${globalMetrics.totalShorts} queda`;
+                      return (
+                        <div className={`rounded-2xl p-5 border-l-4 ${
+                          isBuying  ? 'bg-emerald-500/8 border-l-emerald-500 border border-emerald-500/15' :
+                          isSelling ? 'bg-red-500/8 border-l-red-500 border border-red-500/15' :
+                                      'bg-amber-500/8 border-l-amber-500 border border-amber-500/15'
+                        }`}>
+                          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">As baleias estão</p>
+                          <div className={`flex items-center gap-2 mb-1 ${isBuying ? 'text-emerald-400' : isSelling ? 'text-red-400' : 'text-amber-400'}`}>
+                            {isBuying ? <ArrowUpRight className="w-6 h-6" /> : isSelling ? <ArrowDownRight className="w-6 h-6" /> : <Activity className="w-5 h-5" />}
+                            <span className="text-2xl font-black">{label}</span>
+                          </div>
+                          <p className="text-xs text-slate-500">{sub}</p>
+                          {globalMetrics.totalPositions > 0 && (
+                            <div className="mt-3 flex h-2 rounded-full overflow-hidden gap-0.5">
+                              <div className="bg-emerald-500 rounded-l-full transition-all duration-700 relative overflow-hidden" style={{ width: `${lPct}%` }}>
+                                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shine-sweep" />
+                              </div>
+                              <div className="bg-red-500 rounded-r-full flex-1 transition-all duration-700" />
+                            </div>
+                          )}
                         </div>
-                        <div className="bg-red-500 rounded-r-full flex-1 transition-all duration-700" />
-                      </div>
-                      <div className="flex justify-between text-xs font-mono tabular-nums">
-                        <span className="text-emerald-400 font-black">{globalMetrics.totalLongs} LONG <span className="text-emerald-600">{lPct.toFixed(1)}%</span></span>
-                        <span className="text-red-400 font-black"><span className="text-red-600">{sPct.toFixed(1)}%</span> SHORT {globalMetrics.totalShorts}</span>
-                      </div>
-                    </div>
-                  );
-                })()}
+                      );
+                    })()}
 
-                {/* Charts row */}
-                {whalesData.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* PnL Donut */}
-                    <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5">
-                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                        Distribuição Long / Short
+                    {/* Card 2: PnL */}
+                    <div className={`rounded-2xl p-5 border ${globalMetrics.totalPnl >= 0 ? 'bg-emerald-500/5 border-emerald-500/15' : 'bg-red-500/5 border-red-500/15'}`}>
+                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">
+                        {globalMetrics.totalPnl >= 0 ? 'Em Lucro Agora' : 'Em Prejuízo Agora'}
                       </p>
-                      {globalMetrics.totalPositions === 0
-                        ? <p className="text-slate-600 text-xs text-center py-8">Sem posições abertas</p>
-                        : (
-                          <div className="flex items-center gap-4">
-                            <div className="h-40 flex-1">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie data={longShortPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
-                                    {longShortPieData.map((entry, i) => (
-                                      <Cell key={i} fill={entry.fill} stroke="transparent" />
-                                    ))}
-                                  </Pie>
-                                  <Tooltip {...CHART_STYLE} formatter={(v, n) => [v, n]} />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            </div>
-                            <div className="space-y-3 shrink-0">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
-                                  <span className="text-xs text-slate-400">LONG</span>
-                                </div>
-                                <p className="text-xl font-black font-mono tabular-nums text-emerald-400">{globalMetrics.totalLongs}</p>
-                                <p className="text-xs text-emerald-600 font-mono">{globalMetrics.totalPositions > 0 ? ((globalMetrics.totalLongs / globalMetrics.totalPositions) * 100).toFixed(1) : 0}%</p>
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="w-2.5 h-2.5 rounded-sm bg-orange-500" />
-                                  <span className="text-xs text-slate-400">SHORT</span>
-                                </div>
-                                <p className="text-xl font-black font-mono tabular-nums text-orange-400">{globalMetrics.totalShorts}</p>
-                                <p className="text-xs text-orange-700 font-mono">{globalMetrics.totalPositions > 0 ? ((globalMetrics.totalShorts / globalMetrics.totalPositions) * 100).toFixed(1) : 0}%</p>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      }
-                    </div>
-
-                    {/* Top whales bar chart */}
-                    <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5">
-                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                        Top Whales por Portfólio
+                      <p className={`text-3xl font-black font-mono tabular-nums ${globalMetrics.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {globalMetrics.totalPnl >= 0 ? '+' : ''}{fmt(globalMetrics.totalPnl)}
                       </p>
-                      {whaleBarData.length === 0
-                        ? <p className="text-slate-600 text-xs text-center py-8">Sem dados</p>
-                        : (
-                          <div className="h-40">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={whaleBarData} layout="vertical" margin={{ left: -10, right: 10, top: 0, bottom: 0 }}>
-                                <defs>
-                                  <linearGradient id="whaleBarGrad" x1="0" y1="0" x2="1" y2="0">
-                                    <stop offset="0%" stopColor="#22d3ee" />
-                                    <stop offset="100%" stopColor="#0ea5e9" />
-                                  </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="2 2" stroke="#0e2d4a" horizontal={false} />
-                                <XAxis type="number" tick={{ fill: '#334155', fontSize: 9 }} tickFormatter={v => fmt(v)} />
-                                <YAxis type="category" dataKey="name" tick={{ fill: '#475569', fontSize: 10 }} width={62} />
-                                <Tooltip {...CHART_STYLE} formatter={(v) => [fmt(v), 'Portfólio']} />
-                                <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="url(#whaleBarGrad)" />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        )
-                      }
-                    </div>
-                  </div>
-                )}
-
-                {/* Liquidation summary (static data) */}
-                <div className="grid grid-cols-3 gap-3">
-                  {Object.entries(liquidationData).map(([period, data]) => (
-                    <div key={period} onClick={() => setExpandedMetric(expandedMetric === period ? null : period)}
-                      className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4 cursor-pointer hover:border-red-500/20 transition-all">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest">Liquidações {period}</p>
-                        {expandedMetric === period ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
-                      </div>
-                      <p className="text-xl font-black font-mono tabular-nums text-red-400">{fmt(data.total)}</p>
-                      <p className="text-xs text-slate-600 mt-0.5 font-mono">{data.trades} trades</p>
-                      {expandedMetric === period && (
-                        <div className="mt-3 pt-3 border-t border-cyan-900/20 grid grid-cols-2 gap-2 text-xs">
-                          <div><p className="text-slate-600 mb-0.5 text-[10px] uppercase tracking-widest">Lucro</p><p className="font-bold font-mono text-emerald-400">{fmt(data.profit)}</p></div>
-                          <div><p className="text-slate-600 mb-0.5 text-[10px] uppercase tracking-widest">Média</p><p className="font-bold font-mono text-cyan-400">{fmt(data.total / data.trades)}</p></div>
-                          <div><p className="text-slate-600 mb-0.5 text-[10px] uppercase tracking-widest">LONGs</p><p className="font-bold font-mono text-emerald-400">{data.longs}</p></div>
-                          <div><p className="text-slate-600 mb-0.5 text-[10px] uppercase tracking-widest">SHORTs</p><p className="font-bold font-mono text-orange-400">{data.shorts}</p></div>
+                      <p className="text-xs text-slate-500 mt-1 font-mono">
+                        {globalMetrics.totalValue > 0
+                          ? `${((globalMetrics.totalPnl / globalMetrics.totalValue) * 100).toFixed(2)}% do capital`
+                          : 'sem capital'}
+                      </p>
+                      {pnlHistory.length > 1 && (
+                        <div className="h-8 -mx-1 mt-2">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={pnlHistory}>
+                              <Line dataKey="v" stroke={globalMetrics.totalPnl >= 0 ? '#10b981' : '#ef4444'} dot={false} strokeWidth={1.5} />
+                            </LineChart>
+                          </ResponsiveContainer>
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
 
-                {/* Whale cards */}
-                <div>
-                  <SectionHeader title={`Whales Monitoradas (${whalesData.length})`} icon={Users} />
-                  {whalesData.length === 0
-                    ? <EmptyState icon={Wallet} title="Nenhuma whale adicionada" sub='Clique em "Add Wallet" para começar' />
-                    : (
-                      <div className="space-y-3">
-                        {whalesData.map(w => {
-                          const marginPct = w.account_value > 0 ? Math.min(100, (w.total_margin_used / w.account_value) * 100) : 0;
-                          const heat = marginPct;
-                          const initials = (w.nickname || w.address || '?').slice(0, 2).toUpperCase();
-                          const heatRingColor = heat >= 80 ? '#ef4444' : heat >= 60 ? '#f97316' : heat >= 40 ? '#f59e0b' : '#10b981';
-                          const heatDash = (heat * 0.6912).toFixed(1);
-                          const isHighRisk = w.liquidation_risk === 'Alto';
-                          return (
-                            <div key={w.address}
-                              className={`bg-[#0a1628]/60 border border-cyan-900/20 border-l-2 ${riskBorderLeft(w.liquidation_risk)} rounded-xl p-4 hover:bg-[#0a1628]/80 transition-all ${isHighRisk ? 'whale-high-risk' : ''}`}>
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap mb-3">
-                                    <div className="relative w-8 h-8 shrink-0">
-                                      <svg width="32" height="32" viewBox="0 0 32 32" className="absolute inset-0">
-                                        <circle cx="16" cy="16" r="15" fill="#0a1628" stroke="#0e2d4a" strokeWidth="1.5" />
-                                        <circle cx="16" cy="16" r="11" fill="none" stroke={heatRingColor} strokeWidth="2"
-                                          strokeDasharray={`${heatDash} 69.12`} strokeLinecap="round"
-                                          transform="rotate(-90 16 16)" opacity="0.8" />
-                                      </svg>
-                                      <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-cyan-300">
-                                        {initials}
-                                      </div>
-                                    </div>
-                                    {w.nickname && <span className="font-bold text-sm">{w.nickname}</span>}
-                                    <a href={`https://hypurrscan.io/address/${w.address}`}
-                                      target="_blank" rel="noopener noreferrer"
-                                      className="font-mono text-xs text-cyan-500 hover:text-cyan-300 flex items-center gap-0.5">
-                                      {fmtAddr(w.address)}<ExternalLink className="w-2.5 h-2.5 ml-0.5" />
-                                    </a>
-                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${riskBadge(w.liquidation_risk)}`}>
-                                      {w.liquidation_risk}
-                                    </span>
-                                    {w.error && <span className="text-[11px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full">erro</span>}
-                                  </div>
+                    {/* Card 3: Capital */}
+                    <div className="rounded-2xl p-5 bg-[#0a1628]/60 border border-cyan-900/20">
+                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">Capital Total</p>
+                      <p className="text-3xl font-black font-mono tabular-nums text-cyan-400">{fmt(globalMetrics.totalValue)}</p>
+                      <p className="text-xs text-slate-500 mt-1">{globalMetrics.totalWhales} baleias · {globalMetrics.totalPositions} posições</p>
+                      {valueHistory.length > 1 && (
+                        <div className="h-8 -mx-1 mt-2">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={valueHistory}>
+                              <Line dataKey="v" stroke="#22d3ee" dot={false} strokeWidth={1.5} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
-                                    <div>
-                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Conta</p>
-                                      <p className="font-black text-emerald-400 font-mono tabular-nums text-sm">{fmt(w.account_value)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">PnL</p>
-                                      <p className={`font-black font-mono tabular-nums text-sm ${pnlClass(w.unrealized_pnl)}`}>{fmt(w.unrealized_pnl)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Margem</p>
-                                      <p className="font-bold text-slate-400 font-mono tabular-nums text-sm">{fmt(w.total_margin_used)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Pos.</p>
-                                      <p className="font-black text-cyan-400 font-mono tabular-nums text-sm">{w.active_positions?.length || 0}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Heat%</p>
-                                      <p className="font-black font-mono tabular-nums text-sm" style={{ color: heatRingColor }}>{heat.toFixed(0)}%</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Margem%</p>
-                                      <p className={`font-black font-mono tabular-nums text-sm ${heat > 70 ? 'text-red-400' : heat > 40 ? 'text-amber-400' : 'text-emerald-400'}`}>{marginPct.toFixed(1)}%</p>
-                                    </div>
-                                  </div>
+                  {/* NARRATIVE — plain language, readable by anyone */}
+                  {narrative && (
+                    <div className={`px-4 py-4 rounded-xl border ${
+                      narrative.color === 'emerald' ? 'bg-emerald-500/5 border-emerald-500/15' :
+                      narrative.color === 'red'     ? 'bg-red-500/5 border-red-500/15' :
+                      narrative.color === 'amber'   ? 'bg-amber-500/5 border-amber-500/15' :
+                                                      'bg-cyan-500/5 border-cyan-500/15'
+                    }`}>
+                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-1.5">O que está acontecendo agora</p>
+                      <p className={`text-sm leading-relaxed ${
+                        narrative.color === 'emerald' ? 'text-emerald-200' :
+                        narrative.color === 'red'     ? 'text-red-200' :
+                        narrative.color === 'amber'   ? 'text-amber-200' :
+                                                        'text-cyan-200'
+                      }`}>{narrative.emoji} {narrative.text}</p>
+                    </div>
+                  )}
 
-                                  {/* Margin usage bar */}
-                                  <div className="mb-3">
-                                    <div className="flex justify-between text-[10px] text-slate-600 mb-1">
-                                      <span className="uppercase tracking-widest">Uso de Margem</span>
-                                      <span className="font-mono">{marginPct.toFixed(1)}%</span>
-                                    </div>
-                                    <ProgressBar value={marginPct} color={marginPct > 70 ? 'red' : marginPct > 40 ? 'amber' : 'emerald'} />
-                                  </div>
-
-                                  {w.active_positions?.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {w.active_positions.slice(0, 8).map((p, i) => (
-                                        <span key={i} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs border ${
-                                          p.size > 0
-                                            ? 'bg-emerald-500/8 border-emerald-500/20 text-emerald-300'
-                                            : 'bg-red-500/8 border-red-500/20 text-red-300'
-                                        }`}>
-                                          <span className="font-bold">{p.coin}</span>
-                                          <span className={pnlClass(p.unrealized_pnl)}>{fmt(p.unrealized_pnl)}</span>
-                                        </span>
-                                      ))}
-                                      {w.active_positions.length > 8 && (
-                                        <span className="px-2 py-1 text-xs text-slate-500 bg-slate-700/40 rounded-lg">+{w.active_positions.length - 8}</span>
-                                      )}
-                                    </div>
-                                  )}
+                  {/* POSITIONS GRID — one tile per open position */}
+                  {globalMetrics.totalPositions > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                        Posições Abertas Agora ({globalMetrics.totalPositions})
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {whalesData.flatMap((w, wi) =>
+                          (w.active_positions || []).map((p, pi) => {
+                            const isLong = p.size > 0;
+                            const positivePnl = (p.unrealized_pnl || 0) >= 0;
+                            return (
+                              <div key={`${wi}-${pi}`}
+                                className={`rounded-xl p-3.5 border transition-all ${
+                                  isLong
+                                    ? 'bg-emerald-500/5 border-emerald-500/15 hover:border-emerald-500/30'
+                                    : 'bg-red-500/5 border-red-500/15 hover:border-red-500/30'
+                                }`}>
+                                <div className="flex items-start justify-between mb-1.5">
+                                  <span className="font-black text-white text-base leading-none">{p.coin}</span>
+                                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isLong ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    {isLong ? '▲ LONG' : '▼ SHORT'}
+                                  </span>
                                 </div>
-
-                                <button onClick={() => { setWhaleToDelete(w); setShowDeleteModal(true); }}
-                                  className="shrink-0 p-2 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                <p className={`text-lg font-black font-mono tabular-nums leading-none ${positivePnl ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {positivePnl ? '+' : ''}{fmt(p.unrealized_pnl)}
+                                </p>
+                                <p className="text-[10px] text-slate-500 mt-1.5 truncate">{w.nickname || fmtAddr(w.address)}</p>
+                                <p className="text-[10px] text-slate-600 font-mono">{fmt(p.position_value)}{p.leverage ? ` · ${p.leverage.toFixed(0)}×` : ''}</p>
                               </div>
-                              <p className="text-[10px] text-slate-600 mt-2">Atualizado: {fmtDate(w.last_update)}</p>
-                            </div>
-                          );
-                        })}
+                            );
+                          })
+                        )}
                       </div>
-                    )
-                  }
-                </div>
+                    </div>
+                  )}
+
+                  {/* WHALE LIST — compact single-line rows */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5 text-cyan-400" />
+                        Baleias Monitoradas ({whalesData.length})
+                      </p>
+                      <button onClick={() => { setAddError(null); setShowAddModal(true); }}
+                        className="flex items-center gap-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
+                        <Plus className="w-3 h-3" /> Adicionar
+                      </button>
+                    </div>
+                    {whalesData.length === 0
+                      ? <EmptyState icon={Wallet} title="Nenhuma whale adicionada" sub='Clique em "Add Wallet" para começar' />
+                      : (
+                        <div className="space-y-2">
+                          {whalesData.map(w => {
+                            const marginPct = w.account_value > 0 ? Math.min(100, (w.total_margin_used / w.account_value) * 100) : 0;
+                            const isHighRisk = w.liquidation_risk === 'Alto';
+                            const pnlPos = (w.unrealized_pnl || 0) >= 0;
+                            return (
+                              <div key={w.address}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-xl border border-l-2 ${riskBorderLeft(w.liquidation_risk)} ${
+                                  isHighRisk
+                                    ? 'bg-red-500/5 border-red-500/10 whale-high-risk'
+                                    : 'bg-[#0a1628]/60 border-cyan-900/15'
+                                } hover:bg-[#0a1628]/90 transition-all`}>
+                                <div className="w-8 h-8 rounded-xl bg-cyan-500/10 flex items-center justify-center text-[10px] font-black text-cyan-300 shrink-0">
+                                  {(w.nickname || w.address || '?').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="font-bold text-sm text-white truncate">{w.nickname || fmtAddr(w.address)}</span>
+                                    {isHighRisk && (
+                                      <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-full shrink-0">⚠ Risco Alto</span>
+                                    )}
+                                    {w.error && (
+                                      <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">erro</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 text-[10px]">
+                                    <span className="font-mono tabular-nums text-emerald-400 font-bold">{fmt(w.account_value)}</span>
+                                    <span className={`font-mono tabular-nums font-bold ${pnlPos ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {pnlPos ? '+' : ''}{fmt(w.unrealized_pnl)}
+                                    </span>
+                                    <span className="text-slate-500">{w.active_positions?.length || 0} posições</span>
+                                    <span className="text-slate-600">{fmtRel(w.last_update)}</span>
+                                  </div>
+                                </div>
+                                <div className="w-20 shrink-0">
+                                  <div className="flex justify-between text-[9px] text-slate-600 mb-1">
+                                    <span>Margem</span>
+                                    <span className="font-mono">{marginPct.toFixed(0)}%</span>
+                                  </div>
+                                  <ProgressBar value={marginPct} color={marginPct > 70 ? 'red' : marginPct > 40 ? 'amber' : 'emerald'} />
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <a href={`https://hypurrscan.io/address/${w.address}`} target="_blank" rel="noopener noreferrer"
+                                    className="p-1.5 rounded-lg text-slate-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all">
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                  <button onClick={() => { setWhaleToDelete(w); setShowDeleteModal(true); }}
+                                    className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
+                    }
+                  </div>
+
                 </div>
 
+                {/* ── RIGHT COLUMN (1/3) — Activity Feed ─────────────────── */}
                 <div className="space-y-4">
                   <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4 xl:sticky xl:top-20">
                     <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3 flex items-center gap-2">
