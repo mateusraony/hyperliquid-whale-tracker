@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  RadialBarChart, RadialBar,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -109,49 +110,58 @@ function generateInsight(whalesData, globalMetrics) {
 
 // ─── sub-components ──────────────────────────────────────────────────────────
 
-function GlowCard({ label, value, sub, color = 'blue', icon: Icon, trend }) {
+function GlowCard({ label, value, sub, color = 'cyan', icon: Icon, trend, heat }) {
   const border =
+    color === 'cyan'    ? 'border-cyan-500/20 hover:border-cyan-500/40' :
     color === 'emerald' ? 'border-emerald-500/20 hover:border-emerald-500/40' :
     color === 'red'     ? 'border-red-500/20 hover:border-red-500/40' :
     color === 'amber'   ? 'border-amber-500/20 hover:border-amber-500/40' :
     color === 'purple'  ? 'border-purple-500/20 hover:border-purple-500/40' :
     color === 'orange'  ? 'border-orange-500/20 hover:border-orange-500/40' :
-                          'border-blue-500/20 hover:border-blue-500/40';
+    color === 'blue'    ? 'border-blue-500/20 hover:border-blue-500/40' :
+                          'border-cyan-500/20 hover:border-cyan-500/40';
   const glow =
+    color === 'cyan'    ? 'shadow-cyan-500/5' :
     color === 'emerald' ? 'shadow-emerald-500/5' :
     color === 'red'     ? 'shadow-red-500/5' :
     color === 'amber'   ? 'shadow-amber-500/5' :
     color === 'purple'  ? 'shadow-purple-500/5' :
     color === 'orange'  ? 'shadow-orange-500/5' :
-                          'shadow-blue-500/5';
+    color === 'blue'    ? 'shadow-blue-500/5' :
+                          'shadow-cyan-500/5';
   const iconBg =
+    color === 'cyan'    ? 'bg-cyan-500/10 text-cyan-400' :
     color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' :
     color === 'red'     ? 'bg-red-500/10 text-red-400' :
     color === 'amber'   ? 'bg-amber-500/10 text-amber-400' :
     color === 'purple'  ? 'bg-purple-500/10 text-purple-400' :
     color === 'orange'  ? 'bg-orange-500/10 text-orange-400' :
-                          'bg-blue-500/10 text-blue-400';
+    color === 'blue'    ? 'bg-blue-500/10 text-blue-400' :
+                          'bg-cyan-500/10 text-cyan-400';
   const valColor =
+    color === 'cyan'    ? 'text-cyan-400' :
     color === 'emerald' ? 'text-emerald-400' :
     color === 'red'     ? 'text-red-400' :
     color === 'amber'   ? 'text-amber-400' :
     color === 'purple'  ? 'text-purple-400' :
     color === 'orange'  ? 'text-orange-400' :
-                          'text-blue-400';
+    color === 'blue'    ? 'text-blue-400' :
+                          'text-cyan-400';
   return (
-    <div className={`bg-slate-800/40 backdrop-blur border ${border} rounded-2xl p-4 flex flex-col gap-2 shadow-lg ${glow} transition-all duration-200`}>
+    <div className={`bg-[#0a1628]/60 backdrop-blur border ${border} rounded-xl p-3.5 flex flex-col gap-2 shadow-lg ${glow} transition-all duration-200`}>
       <div className="flex items-center justify-between">
-        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">{label}</p>
+        <p className="text-slate-600 text-[10px] font-semibold uppercase tracking-widest">{label}</p>
         {Icon && (
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${iconBg}`}>
-            <Icon className="w-3.5 h-3.5" />
+          <div className={`relative w-6 h-6 rounded-lg flex items-center justify-center ${iconBg}`}>
+            <Icon className="w-3 h-3" />
+            {heat > 70 && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
           </div>
         )}
       </div>
-      <p className={`text-2xl font-black ${valColor} leading-none`}>{value}</p>
+      <p className={`text-xl font-black font-mono tabular-nums ${valColor} leading-none`}>{value}</p>
       {(sub || trend !== undefined) && (
         <div className="flex items-center justify-between">
-          {sub && <p className="text-xs text-slate-500">{sub}</p>}
+          {sub && <p className="text-[10px] text-slate-600">{sub}</p>}
           {trend !== undefined && (
             <span className={`text-xs font-semibold flex items-center gap-0.5 ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
@@ -164,18 +174,23 @@ function GlowCard({ label, value, sub, color = 'blue', icon: Icon, trend }) {
   );
 }
 
-function ProgressBar({ value, max = 100, color = 'blue' }) {
+function ProgressBar({ value, max = 100, color = 'cyan' }) {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
-  const fill =
-    color === 'emerald' ? 'bg-emerald-500' :
-    color === 'red'     ? 'bg-red-500' :
-    color === 'amber'   ? 'bg-amber-500' :
-    color === 'purple'  ? 'bg-purple-500' :
-    color === 'orange'  ? 'bg-orange-500' :
-                          'bg-blue-500';
+  const fillFrom =
+    color === 'cyan'    ? 'from-cyan-500 to-cyan-400' :
+    color === 'emerald' ? 'from-emerald-500 to-emerald-400' :
+    color === 'red'     ? 'from-red-500 to-red-400' :
+    color === 'amber'   ? 'from-amber-500 to-amber-400' :
+    color === 'purple'  ? 'from-purple-500 to-purple-400' :
+    color === 'orange'  ? 'from-orange-500 to-orange-400' :
+    color === 'blue'    ? 'from-blue-500 to-blue-400' :
+                          'from-cyan-500 to-cyan-400';
   return (
-    <div className="h-1.5 bg-slate-700/60 rounded-full overflow-hidden">
-      <div className={`h-full ${fill} rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
+    <div className="h-1 bg-[#0f2040] rounded-full overflow-hidden">
+      <div className={`h-full bg-gradient-to-r ${fillFrom} rounded-full transition-all duration-700 relative overflow-hidden`}
+        style={{ width: `${pct}%` }}>
+        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shine-sweep" />
+      </div>
     </div>
   );
 }
@@ -235,8 +250,8 @@ function RefreshBtn({ onClick, loading, label = 'Atualizar' }) {
 }
 
 const CHART_STYLE = {
-  contentStyle: { background: '#0f172a', border: '1px solid #1e293b', borderRadius: '10px', fontSize: 12 },
-  itemStyle: { color: '#94a3b8' },
+  contentStyle: { background: '#070e1c', border: '1px solid #0e2d4a', borderRadius: '10px', fontSize: 11, fontFamily: 'ui-monospace, monospace' },
+  itemStyle: { color: '#22d3ee' },
 };
 
 // ─── main component ──────────────────────────────────────────────────────────
@@ -249,6 +264,7 @@ export default function HyperliquidPro() {
   const [whalesData, setWhalesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [lastUpdate, setLastUpdate] = useState(null);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -292,6 +308,7 @@ export default function HyperliquidPro() {
 
   const [simulatorCapital, setSimulatorCapital] = useState(10000);
   const [lbSort, setLbSort] = useState('pnl');
+  const [now, setNow] = useState(new Date());
 
   // ── loaders ────────────────────────────────────────────────────────────────
 
@@ -359,6 +376,11 @@ export default function HyperliquidPro() {
     loadWhalesData();
     loadTelegramConfig();
     const iv = setInterval(loadWhalesData, 30000);
+    return () => clearInterval(iv);
+  }, []);
+
+  useEffect(() => {
+    const iv = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(iv);
   }, []);
 
@@ -463,6 +485,22 @@ export default function HyperliquidPro() {
                              (b.active_positions?.length || 0) - (a.active_positions?.length || 0)
   );
 
+  const cumulativePnlData = (() => {
+    if (!tradesData.length) return [];
+    const byDate = {};
+    tradesData.filter(t => t.pnl != null && t.open_timestamp).forEach(t => {
+      const day = new Date(t.open_timestamp).toLocaleDateString('pt-BR');
+      byDate[day] = (byDate[day] || 0) + Number(t.pnl);
+    });
+    let running = 0;
+    return Object.entries(byDate)
+      .sort(([a], [b]) => {
+        const p = (s) => { const [d, m, y] = s.split('/'); return new Date(parseInt(y), parseInt(m) - 1, parseInt(d)); };
+        return p(a) - p(b);
+      })
+      .map(([date, pnl]) => ({ date, cumulative: (running += pnl) }));
+  })();
+
   const TABS = [
     { id: 'command',   icon: Target,      label: 'Command'     },
     { id: 'positions', icon: BarChart3,   label: 'Positions'   },
@@ -480,31 +518,38 @@ export default function HyperliquidPro() {
   // ── render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white">
+    <div className="min-h-screen bg-[#060b14] text-white">
       <style>{`
-        ::-webkit-scrollbar { width:5px; height:5px; }
+        ::-webkit-scrollbar { width:4px; height:4px; }
         ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:#1e293b; border-radius:8px; }
-        ::-webkit-scrollbar-thumb:hover { background:#334155; }
+        ::-webkit-scrollbar-thumb { background:#0e2d4a; border-radius:8px; }
+        ::-webkit-scrollbar-thumb:hover { background:#1a4a72; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
         .fade-in { animation: fadeIn 0.25s ease both; }
+        .no-scrollbar { scrollbar-width:none; }
+        .no-scrollbar::-webkit-scrollbar { display:none; }
       `}</style>
 
       {/* ═══ HEADER ═══════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/75 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-cyan-900/20 bg-[#040912]/80 backdrop-blur-xl">
         <div className="max-w-screen-2xl mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center justify-between h-12">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <Activity className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <Activity className="w-3.5 h-3.5 text-black" />
               </div>
               <div className="leading-tight">
                 <p className="font-black text-sm tracking-tight">Hyperliquid Pro</p>
-                <p className="text-[10px] text-slate-500 font-medium">Whale Tracker</p>
+                <p className="text-[10px] text-slate-600 font-medium">Whale Tracker</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-slate-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                {now.toLocaleTimeString('pt-BR')}
+              </div>
+
               <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
                 systemStatus === 'online'  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                 systemStatus === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
@@ -515,26 +560,20 @@ export default function HyperliquidPro() {
                   systemStatus === 'warning' ? 'bg-amber-400' : 'bg-red-400'
                 }`} />
                 {systemStatus === 'online' ? 'Live' : systemStatus === 'warning' ? 'Aviso' : 'Offline'}
-                <span className="text-slate-500 font-normal">· {whalesData.length} whales</span>
+                <span className="text-slate-600 font-normal">· {whalesData.length}w</span>
               </div>
 
-              {lastUpdate && (
-                <span className="text-[10px] text-slate-600 hidden md:block">
-                  {lastUpdate.toLocaleTimeString('pt-BR')}
-                </span>
-              )}
-
               <button onClick={loadWhalesData} disabled={loading}
-                className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all">
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                className="p-1.5 rounded-lg hover:bg-cyan-500/10 text-slate-500 hover:text-cyan-400 transition-all">
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               </button>
 
-              <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all">
-                <Bell className="w-4 h-4" />
+              <button className="p-1.5 rounded-lg hover:bg-cyan-500/10 text-slate-500 hover:text-cyan-400 transition-all">
+                <Bell className="w-3.5 h-3.5" />
               </button>
 
               <button onClick={() => { setAddError(null); setShowAddModal(true); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl text-xs font-bold text-cyan-400 transition-all">
                 <Plus className="w-3.5 h-3.5" /> Add Wallet
               </button>
             </div>
@@ -548,10 +587,10 @@ export default function HyperliquidPro() {
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all ${
                     active
-                      ? 'border-blue-500 text-white'
-                      : 'border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                      ? 'border-cyan-400 text-cyan-300'
+                      : 'border-transparent text-slate-600 hover:text-slate-300 hover:border-slate-700'
                   }`}>
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className={`w-3.5 h-3.5 ${active ? 'text-cyan-400' : ''}`} />
                   {t.label}
                 </button>
               );
@@ -581,21 +620,21 @@ export default function HyperliquidPro() {
               <>
                 {/* AI Insight Banner */}
                 {insight && (
-                  <div className={`flex items-start gap-3 px-5 py-4 rounded-2xl border ${
-                    insight.color === 'emerald' ? 'bg-emerald-500/8 border-emerald-500/20' :
-                    insight.color === 'red'     ? 'bg-red-500/8 border-red-500/20' :
-                    insight.color === 'amber'   ? 'bg-amber-500/8 border-amber-500/20' :
-                                                  'bg-blue-500/8 border-blue-500/20'
+                  <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border-l-2 border ${
+                    insight.color === 'emerald' ? 'bg-emerald-500/5 border-l-emerald-500 border-emerald-500/10' :
+                    insight.color === 'red'     ? 'bg-red-500/5 border-l-red-500 border-red-500/10' :
+                    insight.color === 'amber'   ? 'bg-amber-500/5 border-l-amber-500 border-amber-500/10' :
+                                                  'bg-cyan-500/5 border-l-cyan-500 border-cyan-500/10'
                   }`}>
-                    <span className="text-2xl leading-none mt-0.5">{insight.icon}</span>
+                    <span className="text-xl leading-none mt-0.5">{insight.icon}</span>
                     <div>
                       <p className={`font-bold text-sm ${
                         insight.color === 'emerald' ? 'text-emerald-300' :
                         insight.color === 'red'     ? 'text-red-300' :
                         insight.color === 'amber'   ? 'text-amber-300' :
-                                                      'text-blue-300'
+                                                      'text-cyan-300'
                       }`}>{insight.title}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{insight.body}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{insight.body}</p>
                     </div>
                   </div>
                 )}
@@ -614,7 +653,7 @@ export default function HyperliquidPro() {
                   <GlowCard label="Posições Abertas" icon={BarChart3}
                     value={globalMetrics.totalPositions}
                     sub="posições ativas"
-                    color="blue" />
+                    color="cyan" />
                   <GlowCard label="LONG" icon={ArrowUpRight}
                     value={globalMetrics.totalLongs}
                     sub={`${globalMetrics.totalPositions > 0 ? ((globalMetrics.totalLongs / globalMetrics.totalPositions) * 100).toFixed(0) : 0}% do total`}
@@ -629,9 +668,9 @@ export default function HyperliquidPro() {
                 {whalesData.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* LONG/SHORT donut */}
-                    <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-5">
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-400" />
+                    <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5">
+                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                         Distribuição Long / Short
                       </p>
                       {globalMetrics.totalPositions === 0
@@ -674,9 +713,9 @@ export default function HyperliquidPro() {
                     </div>
 
                     {/* Top whales bar chart */}
-                    <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-5">
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-violet-400" />
+                    <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5">
+                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                         Top Whales por Portfólio
                       </p>
                       {whaleBarData.length === 0
@@ -685,11 +724,17 @@ export default function HyperliquidPro() {
                           <div className="h-40">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={whaleBarData} layout="vertical" margin={{ left: -10, right: 10, top: 0, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="2 2" stroke="#1e293b" horizontal={false} />
-                                <XAxis type="number" tick={{ fill: '#475569', fontSize: 9 }} tickFormatter={v => fmt(v)} />
-                                <YAxis type="category" dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} width={62} />
+                                <defs>
+                                  <linearGradient id="whaleBarGrad" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stopColor="#22d3ee" />
+                                    <stop offset="100%" stopColor="#0ea5e9" />
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="2 2" stroke="#0e2d4a" horizontal={false} />
+                                <XAxis type="number" tick={{ fill: '#334155', fontSize: 9 }} tickFormatter={v => fmt(v)} />
+                                <YAxis type="category" dataKey="name" tick={{ fill: '#475569', fontSize: 10 }} width={62} />
                                 <Tooltip {...CHART_STYLE} formatter={(v) => [fmt(v), 'Portfólio']} />
-                                <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="#6366f1" />
+                                <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="url(#whaleBarGrad)" />
                               </BarChart>
                             </ResponsiveContainer>
                           </div>
@@ -703,13 +748,13 @@ export default function HyperliquidPro() {
                 <div className="grid grid-cols-3 gap-3">
                   {Object.entries(liquidationData).map(([period, data]) => (
                     <div key={period} onClick={() => setExpandedMetric(expandedMetric === period ? null : period)}
-                      className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 cursor-pointer hover:border-red-500/20 transition-all">
+                      className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4 cursor-pointer hover:border-red-500/20 transition-all">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Liquidações {period}</p>
                         {expandedMetric === period ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
                       </div>
-                      <p className="text-xl font-black text-red-400">{fmt(data.total)}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{data.trades} trades</p>
+                      <p className="text-xl font-black font-mono tabular-nums text-red-400">{fmt(data.total)}</p>
+                      <p className="text-xs text-slate-600 mt-0.5 font-mono">{data.trades} trades</p>
                       {expandedMetric === period && (
                         <div className="mt-3 pt-3 border-t border-slate-700/50 grid grid-cols-2 gap-2 text-xs">
                           <div><p className="text-slate-500 mb-0.5">Lucro</p><p className="font-bold text-emerald-400">{fmt(data.profit)}</p></div>
@@ -731,20 +776,32 @@ export default function HyperliquidPro() {
                       <div className="space-y-3">
                         {whalesData.map(w => {
                           const marginPct = w.account_value > 0 ? Math.min(100, (w.total_margin_used / w.account_value) * 100) : 0;
+                          const heat = marginPct;
                           const initials = (w.nickname || w.address || '?').slice(0, 2).toUpperCase();
+                          const heatRingColor = heat >= 80 ? '#ef4444' : heat >= 60 ? '#f97316' : heat >= 40 ? '#f59e0b' : '#10b981';
+                          const heatDash = (heat * 0.942).toFixed(1);
+                          const isHighRisk = w.liquidation_risk === 'Alto';
                           return (
                             <div key={w.address}
-                              className={`bg-slate-800/40 border border-white/5 border-l-4 ${riskBorderLeft(w.liquidation_risk)} rounded-2xl p-4 hover:bg-slate-800/60 transition-all`}>
+                              className={`bg-[#0a1628]/60 border border-cyan-900/20 border-l-2 ${riskBorderLeft(w.liquidation_risk)} rounded-xl p-4 hover:bg-[#0a1628]/80 transition-all ${isHighRisk ? 'whale-high-risk' : ''}`}>
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap mb-3">
-                                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500/30 to-violet-500/30 border border-blue-500/20 flex items-center justify-center text-xs font-black text-blue-300">
-                                      {initials}
+                                    <div className="relative w-8 h-8 shrink-0">
+                                      <svg width="32" height="32" viewBox="0 0 32 32" className="absolute inset-0">
+                                        <circle cx="16" cy="16" r="15" fill="#0a1628" stroke="#0e2d4a" strokeWidth="1.5" />
+                                        <circle cx="16" cy="16" r="11" fill="none" stroke={heatRingColor} strokeWidth="2"
+                                          strokeDasharray={`${heatDash} 94.2`} strokeLinecap="round"
+                                          transform="rotate(-90 16 16)" opacity="0.8" />
+                                      </svg>
+                                      <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-cyan-300">
+                                        {initials}
+                                      </div>
                                     </div>
                                     {w.nickname && <span className="font-bold text-sm">{w.nickname}</span>}
                                     <a href={`https://hypurrscan.io/address/${w.address}`}
                                       target="_blank" rel="noopener noreferrer"
-                                      className="font-mono text-xs text-blue-400 hover:text-blue-300 flex items-center gap-0.5">
+                                      className="font-mono text-xs text-cyan-500 hover:text-cyan-300 flex items-center gap-0.5">
                                       {fmtAddr(w.address)}<ExternalLink className="w-2.5 h-2.5 ml-0.5" />
                                     </a>
                                     <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${riskBadge(w.liquidation_risk)}`}>
@@ -753,30 +810,38 @@ export default function HyperliquidPro() {
                                     {w.error && <span className="text-[11px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full">erro</span>}
                                   </div>
 
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
                                     <div>
-                                      <p className="text-slate-500 text-xs mb-0.5">Valor Conta</p>
-                                      <p className="font-black text-emerald-400">{fmt(w.account_value)}</p>
+                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Conta</p>
+                                      <p className="font-black text-emerald-400 font-mono tabular-nums text-sm">{fmt(w.account_value)}</p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-xs mb-0.5">Margem Usada</p>
-                                      <p className="font-bold text-slate-300">{fmt(w.total_margin_used)}</p>
+                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">PnL</p>
+                                      <p className={`font-black font-mono tabular-nums text-sm ${pnlClass(w.unrealized_pnl)}`}>{fmt(w.unrealized_pnl)}</p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-xs mb-0.5">PnL</p>
-                                      <p className={`font-black ${pnlClass(w.unrealized_pnl)}`}>{fmt(w.unrealized_pnl)}</p>
+                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Margem</p>
+                                      <p className="font-bold text-slate-400 font-mono tabular-nums text-sm">{fmt(w.total_margin_used)}</p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-xs mb-0.5">Posições</p>
-                                      <p className="font-black text-blue-400">{w.active_positions?.length || 0}</p>
+                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Pos.</p>
+                                      <p className="font-black text-cyan-400 font-mono tabular-nums text-sm">{w.active_positions?.length || 0}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Heat%</p>
+                                      <p className="font-black font-mono tabular-nums text-sm" style={{ color: heatRingColor }}>{heat.toFixed(0)}%</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Margem%</p>
+                                      <p className={`font-black font-mono tabular-nums text-sm ${heat > 70 ? 'text-red-400' : heat > 40 ? 'text-amber-400' : 'text-emerald-400'}`}>{marginPct.toFixed(1)}%</p>
                                     </div>
                                   </div>
 
                                   {/* Margin usage bar */}
                                   <div className="mb-3">
-                                    <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-                                      <span>Uso de Margem</span>
-                                      <span>{marginPct.toFixed(1)}%</span>
+                                    <div className="flex justify-between text-[10px] text-slate-600 mb-1">
+                                      <span className="uppercase tracking-widest">Uso de Margem</span>
+                                      <span className="font-mono">{marginPct.toFixed(1)}%</span>
                                     </div>
                                     <ProgressBar value={marginPct} color={marginPct > 70 ? 'red' : marginPct > 40 ? 'amber' : 'emerald'} />
                                   </div>
@@ -853,15 +918,15 @@ export default function HyperliquidPro() {
                                 {pos.leverage && <span className="text-xs text-amber-400 font-bold">{pos.leverage.toFixed(0)}×</span>}
                               </div>
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                                <div><p className="text-slate-500 text-xs mb-0.5">Tamanho</p><p className="font-semibold">{Math.abs(pos.size).toFixed(4)}</p></div>
-                                <div><p className="text-slate-500 text-xs mb-0.5">Entrada</p><p className="font-semibold">${pos.entry_price?.toFixed(2)}</p></div>
-                                <div><p className="text-slate-500 text-xs mb-0.5">Mark</p><p className="font-semibold">${pos.mark_px?.toFixed(2) || '—'}</p></div>
-                                <div><p className="text-slate-500 text-xs mb-0.5">Liquidação</p><p className="font-semibold text-red-400">{pos.liquidation_px ? `$${pos.liquidation_px.toFixed(2)}` : 'N/A'}</p></div>
+                                <div><p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Tamanho</p><p className="font-semibold font-mono tabular-nums">{Math.abs(pos.size).toFixed(4)}</p></div>
+                                <div><p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Entrada</p><p className="font-semibold font-mono tabular-nums">${pos.entry_price?.toFixed(2)}</p></div>
+                                <div><p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Mark</p><p className="font-semibold font-mono tabular-nums">${pos.mark_px?.toFixed(2) || '—'}</p></div>
+                                <div><p className="text-slate-600 text-[10px] mb-0.5 uppercase tracking-widest">Liquidação</p><p className="font-semibold font-mono tabular-nums text-red-400">{pos.liquidation_px ? `$${pos.liquidation_px.toFixed(2)}` : 'N/A'}</p></div>
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className={`text-xl font-black ${pnlClass(pos.unrealized_pnl)}`}>{fmt(pos.unrealized_pnl)}</p>
-                              <p className="text-xs text-slate-500 mt-0.5">{fmt(pos.position_value)}</p>
+                              <p className={`text-xl font-black font-mono tabular-nums ${pnlClass(pos.unrealized_pnl)}`}>{fmt(pos.unrealized_pnl)}</p>
+                              <p className="text-xs text-slate-600 mt-0.5 font-mono tabular-nums">{fmt(pos.position_value)}</p>
                             </div>
                           </div>
                         </div>
@@ -884,7 +949,30 @@ export default function HyperliquidPro() {
               : tradesData.length === 0
                 ? <DbUnavailable msg="Nenhum trade registrado ainda" />
               : (
-                <div className="bg-slate-800/40 border border-white/5 rounded-2xl overflow-hidden">
+                <>
+                {cumulativePnlData.length > 1 && (
+                  <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5 mb-4">
+                    <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3">PnL Acumulado</p>
+                    <div className="h-36">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={cumulativePnlData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.3} />
+                              <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="2 2" stroke="#0e2d4a" />
+                          <XAxis dataKey="date" tick={{ fill: '#334155', fontSize: 9 }} />
+                          <YAxis tick={{ fill: '#334155', fontSize: 9 }} tickFormatter={v => fmt(v)} />
+                          <Tooltip {...CHART_STYLE} formatter={(v) => [fmt(v), 'PnL Acum.']} />
+                          <Area type="monotone" dataKey="cumulative" stroke="#22d3ee" strokeWidth={2} fill="url(#pnlGrad)" dot={false} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+                <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-900/60">
@@ -913,7 +1001,7 @@ export default function HyperliquidPro() {
                               </td>
                               <td className="px-4 py-3">
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  t.status === 'closed' ? 'bg-slate-700/60 text-slate-400' : 'bg-blue-500/20 text-blue-400'
+                                  t.status === 'closed' ? 'bg-slate-700/60 text-slate-500' : 'bg-cyan-500/20 text-cyan-400'
                                 }`}>{t.status || '—'}</span>
                               </td>
                               <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{fmtDate(t.open_timestamp)}</td>
@@ -924,6 +1012,7 @@ export default function HyperliquidPro() {
                     </table>
                   </div>
                 </div>
+                </>
               )
             }
           </div>
@@ -985,34 +1074,31 @@ export default function HyperliquidPro() {
                 <>
                   {/* Sentiment hero */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Big gauge */}
-                    <div className={`rounded-2xl p-6 flex flex-col items-center justify-center text-center border ${
-                      sentiment.bullish_percentage >= 60 ? 'bg-emerald-500/8 border-emerald-500/20' :
-                      sentiment.bearish_percentage >= 60 ? 'bg-red-500/8 border-red-500/20' :
-                                                           'bg-slate-800/40 border-white/5'
-                    }`}>
-                      <p className="text-5xl mb-2">{sentiment.sentiment_icon}</p>
-                      <p className={`text-2xl font-black mb-1 ${
-                        sentiment.bullish_percentage >= 60 ? 'text-emerald-400' :
-                        sentiment.bearish_percentage >= 60 ? 'text-red-400' : 'text-slate-200'
-                      }`}>{sentiment.sentiment}</p>
-                      <p className="text-xs text-slate-500 mb-4">Sentimento Global</p>
-                      {/* Bull/bear bar */}
-                      <div className="w-full space-y-2">
-                        {[
-                          { label: 'BULL', pct: sentiment.bullish_percentage || 0, bar: 'bg-emerald-500', txt: 'text-emerald-400' },
-                          { label: 'BEAR', pct: sentiment.bearish_percentage || 0, bar: 'bg-red-500', txt: 'text-red-400' },
-                        ].map(row => (
-                          <div key={row.label}>
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className={`font-bold ${row.txt}`}>{row.label}</span>
-                              <span className={row.txt}>{row.pct.toFixed(1)}%</span>
-                            </div>
-                            <div className="h-2 bg-slate-700/60 rounded-full overflow-hidden">
-                              <div className={`h-full ${row.bar} rounded-full`} style={{ width: `${row.pct}%` }} />
-                            </div>
-                          </div>
-                        ))}
+                    {/* Radial gauge */}
+                    <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5 flex flex-col items-center justify-center text-center">
+                      <div className="relative h-44 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadialBarChart cx="50%" cy="55%" innerRadius="55%" outerRadius="90%"
+                            data={[
+                              { name: 'BEAR', value: sentiment.bearish_percentage || 0, fill: '#ef4444' },
+                              { name: 'BULL', value: sentiment.bullish_percentage || 0, fill: '#10b981' },
+                            ]}
+                            startAngle={180} endAngle={0}>
+                            <RadialBar dataKey="value" cornerRadius={4} background={{ fill: '#0f2040' }} />
+                            <Tooltip {...CHART_STYLE} formatter={(v, n) => [`${v.toFixed(1)}%`, n]} />
+                          </RadialBarChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
+                          <p className="text-2xl leading-none mb-1">{sentiment.sentiment_icon}</p>
+                          <p className={`text-lg font-black font-mono tabular-nums ${
+                            sentiment.bullish_percentage >= 60 ? 'text-emerald-400' :
+                            sentiment.bearish_percentage >= 60 ? 'text-red-400' : 'text-slate-200'
+                          }`}>{sentiment.sentiment}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-4 text-xs mt-2">
+                        <span className="text-emerald-400 font-mono font-bold">BULL {(sentiment.bullish_percentage || 0).toFixed(1)}%</span>
+                        <span className="text-red-400 font-mono font-bold">BEAR {(sentiment.bearish_percentage || 0).toFixed(1)}%</span>
                       </div>
                     </div>
 
@@ -1143,9 +1229,9 @@ export default function HyperliquidPro() {
                             { metric: 'Volume', value: Math.min(100, (Math.abs(aiScores[0].breakdown?.avg_trade_size || 0) / 100000) * 100) },
                             { metric: 'PnL 7D', value: Math.min(100, Math.max(0, 50 + ((aiScores[0].breakdown?.recent_pnl_7d || 0) / 10000) * 50)) },
                           ]}>
-                            <PolarGrid stroke="#1e293b" />
-                            <PolarAngleAxis dataKey="metric" tick={{ fill: '#64748b', fontSize: 11 }} />
-                            <Radar dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.15} strokeWidth={2} />
+                            <PolarGrid stroke="#0e2d4a" />
+                            <PolarAngleAxis dataKey="metric" tick={{ fill: '#475569', fontSize: 11 }} />
+                            <Radar dataKey="value" stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.1} strokeWidth={2} />
                             <Tooltip {...CHART_STYLE} formatter={(v) => [`${v.toFixed(1)}`, 'Score']} />
                           </RadarChart>
                         </ResponsiveContainer>
@@ -1199,7 +1285,7 @@ export default function HyperliquidPro() {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-3xl font-black text-purple-400">{s.intelligence_score}</p>
+                            <p className="text-3xl font-black font-mono tabular-nums text-cyan-400">{s.intelligence_score}</p>
                             <p className="text-xs text-slate-500">/ 100</p>
                             <p className={`text-xs font-bold mt-1 ${pnlClass(s.breakdown?.recent_pnl_7d)}`}>{fmt(s.breakdown?.recent_pnl_7d)} <span className="text-slate-600 font-normal">7d</span></p>
                           </div>
@@ -1249,11 +1335,17 @@ export default function HyperliquidPro() {
                               tokens: p.common_tokens,
                             }))}
                             margin={{ top: 0, right: 10, left: -10, bottom: 30 }}>
-                            <CartesianGrid strokeDasharray="2 2" stroke="#1e293b" />
-                            <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 9 }} angle={-30} textAnchor="end" />
-                            <YAxis tick={{ fill: '#475569', fontSize: 10 }} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                            <defs>
+                              <linearGradient id="corrGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#a855f7" />
+                                <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.6} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="2 2" stroke="#0e2d4a" />
+                            <XAxis dataKey="name" tick={{ fill: '#334155', fontSize: 9 }} angle={-30} textAnchor="end" />
+                            <YAxis tick={{ fill: '#334155', fontSize: 10 }} domain={[0, 100]} tickFormatter={v => `${v}%`} />
                             <Tooltip {...CHART_STYLE} formatter={(v, n, p) => [`${v}% (${p.payload.tokens} tokens)`, 'Correlação']} />
-                            <Bar dataKey="correlation" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="correlation" fill="url(#corrGrad)" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1295,7 +1387,7 @@ export default function HyperliquidPro() {
                                 <td className="px-4 py-3 text-xs font-medium">{p.whale2}</td>
                                 <td className="px-4 py-3 text-right">
                                   <div className="flex items-center justify-end gap-2">
-                                    <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                    <div className="w-16 h-1 bg-[#0f2040] rounded-full overflow-hidden">
                                       <div className="h-full bg-purple-500 rounded-full" style={{ width: `${p.correlation}%` }} />
                                     </div>
                                     <span className={`font-black text-sm ${p.correlation >= 80 ? 'text-purple-400' : p.correlation >= 65 ? 'text-blue-400' : 'text-slate-300'}`}>
@@ -1331,10 +1423,10 @@ export default function HyperliquidPro() {
                   {whalesData.map(w => {
                     const marginPct = w.account_value > 0 ? Math.min(100, (w.total_margin_used / w.account_value) * 100) : 0;
                     return (
-                      <div key={w.address} className={`rounded-2xl p-4 border ${
-                        w.liquidation_risk === 'Alto'  ? 'bg-red-500/8 border-red-500/20' :
-                        w.liquidation_risk === 'Médio' ? 'bg-amber-500/8 border-amber-500/20' :
-                                                         'bg-slate-800/40 border-white/5'
+                      <div key={w.address} className={`rounded-xl p-4 border ${
+                        w.liquidation_risk === 'Alto'  ? 'bg-red-500/5 border-red-500/20 whale-high-risk' :
+                        w.liquidation_risk === 'Médio' ? 'bg-amber-500/5 border-amber-500/20' :
+                                                         'bg-[#0a1628]/60 border-cyan-900/20'
                       }`}>
                         <div className="flex items-center justify-between mb-3">
                           <span className="font-bold text-sm">{w.nickname || fmtAddr(w.address)}</span>
@@ -1421,31 +1513,41 @@ export default function HyperliquidPro() {
         {tab === 'simulator' && (
           <div className="space-y-5 fade-in">
             <SectionHeader title="Simulador de Alocação" icon={PlayCircle} iconClass="text-emerald-400" />
-            <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-6 max-w-sm">
-              <p className="text-sm text-slate-400 mb-4">Simule como seu capital seria distribuído seguindo as posições reais das whales.</p>
-              <label className="text-xs text-slate-400 block mb-1.5 font-semibold">Capital (USD)</label>
+            <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5 max-w-sm">
+              <p className="text-xs text-slate-500 mb-4">Simule como seu capital seria distribuído seguindo as posições reais das whales.</p>
+              <label className="text-[10px] text-slate-600 block mb-1.5 font-semibold uppercase tracking-widest">Capital (USD)</label>
               <input type="number" min="1" value={simulatorCapital}
                 onChange={e => setSimulatorCapital(Math.max(1, Number(e.target.value)))}
-                className="w-full bg-slate-900/60 border border-slate-600/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-all" />
+                className="w-full bg-[#050b18]/80 border border-cyan-900/40 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500/60 transition-all" />
             </div>
             {simulatorAllocation.length === 0
               ? <EmptyState icon={PlayCircle} title="Nenhuma posição ativa para simular" sub="Adicione whales com posições abertas" />
               : (
-                <div className="bg-slate-800/40 border border-white/5 rounded-2xl overflow-hidden">
-                  <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+                <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-cyan-900/20 flex items-center justify-between">
                     <span className="font-bold">Alocação Simulada</span>
-                    <span className="text-emerald-400 font-black">{fmtFull(simulatorCapital)}</span>
+                    <span className="text-emerald-400 font-black font-mono tabular-nums">{fmtFull(simulatorCapital)}</span>
                   </div>
                   <div className="p-5 h-52">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={simulatorAllocation.slice(0, 10)} margin={{ top: 0, right: 10, left: -10, bottom: 22 }}>
-                        <CartesianGrid strokeDasharray="2 2" stroke="#1e293b" />
-                        <XAxis dataKey="coin" tick={{ fill: '#64748b', fontSize: 10 }} angle={-30} textAnchor="end" />
-                        <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={v => `${v.toFixed(0)}%`} />
+                        <defs>
+                          <linearGradient id="simLongGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10b981" />
+                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.5} />
+                          </linearGradient>
+                          <linearGradient id="simShortGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f97316" />
+                            <stop offset="100%" stopColor="#f97316" stopOpacity={0.5} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="2 2" stroke="#0e2d4a" />
+                        <XAxis dataKey="coin" tick={{ fill: '#334155', fontSize: 10 }} angle={-30} textAnchor="end" />
+                        <YAxis tick={{ fill: '#334155', fontSize: 10 }} tickFormatter={v => `${v.toFixed(0)}%`} />
                         <Tooltip {...CHART_STYLE} formatter={(v) => [`${v.toFixed(1)}%`, 'Alocação']} />
                         <Bar dataKey="pct" radius={[5, 5, 0, 0]}>
                           {simulatorAllocation.slice(0, 10).map((a, i) => (
-                            <Cell key={i} fill={a.consensus === 'LONG' ? '#10b981' : '#f97316'} />
+                            <Cell key={i} fill={a.consensus === 'LONG' ? 'url(#simLongGrad)' : 'url(#simShortGrad)'} />
                           ))}
                         </Bar>
                       </BarChart>
@@ -1497,7 +1599,7 @@ export default function HyperliquidPro() {
                   {[{ id: 'pnl', label: 'PnL' }, { id: 'value', label: 'Valor' }, { id: 'positions', label: 'Posições' }].map(s => (
                     <button key={s.id} onClick={() => setLbSort(s.id)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        lbSort === s.id ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-800/60 text-slate-400 hover:text-white border border-white/5'
+                        lbSort === s.id ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'bg-[#0a1628]/60 text-slate-500 hover:text-cyan-300 border border-cyan-900/30'
                       }`}>{s.label}
                     </button>
                   ))}
@@ -1560,11 +1662,11 @@ export default function HyperliquidPro() {
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className={`text-lg font-black flex items-center gap-1 ${pnlClass(w.unrealized_pnl)}`}>
+                          <p className={`text-lg font-black font-mono tabular-nums flex items-center gap-1 ${pnlClass(w.unrealized_pnl)}`}>
                             {w.unrealized_pnl >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                             {fmt(w.unrealized_pnl)}
                           </p>
-                          <p className="text-xs text-slate-500">PnL não realizado</p>
+                          <p className="text-xs text-slate-600">PnL não realizado</p>
                         </div>
                       </div>
                     ))}
@@ -1579,11 +1681,11 @@ export default function HyperliquidPro() {
         {tab === 'settings' && (
           <div className="max-w-lg fade-in">
             <SectionHeader title="Configurações" icon={Settings} />
-            <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-6 space-y-5">
+            <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-6 space-y-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                    <Send className="w-4 h-4 text-blue-400" />
+                  <div className="w-9 h-9 bg-cyan-500/10 rounded-xl flex items-center justify-center">
+                    <Send className="w-4 h-4 text-cyan-400" />
                   </div>
                   <div>
                     <p className="font-bold text-sm">Telegram Bot</p>
@@ -1592,7 +1694,7 @@ export default function HyperliquidPro() {
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" checked={tgEnabled} onChange={e => setTgEnabled(e.target.checked)} />
-                  <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" />
+                  <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600" />
                 </label>
               </div>
 
@@ -1611,7 +1713,7 @@ export default function HyperliquidPro() {
                   <div className="relative">
                     <input type={showToken ? 'text' : 'password'} value={tgToken} onChange={e => setTgToken(e.target.value)}
                       placeholder={tgConfigured ? '••••••••••' : 'Cole o token do @BotFather'}
-                      className="w-full bg-slate-900/60 border border-slate-600/60 rounded-xl px-3 py-2.5 pr-10 text-sm focus:outline-none focus:border-blue-500 transition-all" />
+                      className="w-full bg-[#050b18]/80 border border-cyan-900/40 rounded-xl px-3 py-2.5 pr-10 text-sm font-mono focus:outline-none focus:border-cyan-500/60 transition-all" />
                     <button onClick={() => setShowToken(v => !v)} className="absolute right-3 top-2.5 text-slate-500 hover:text-white">
                       {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -1621,7 +1723,7 @@ export default function HyperliquidPro() {
                   <label className="text-xs text-slate-400 block mb-1.5 font-semibold">Chat ID</label>
                   <input type="text" value={tgChatId} onChange={e => setTgChatId(e.target.value)}
                     placeholder="Ex: -1001234567890"
-                    className="w-full bg-slate-900/60 border border-slate-600/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-all" />
+                    className="w-full bg-[#050b18]/80 border border-cyan-900/40 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500/60 transition-all" />
                   <p className="text-xs text-slate-600 mt-1">Obtenha via @userinfobot no Telegram</p>
                 </div>
               </div>
@@ -1638,7 +1740,7 @@ export default function HyperliquidPro() {
               )}
 
               <button onClick={handleSaveTelegramConfig} disabled={tgSaving || (!tgToken && !tgChatId)}
-                className="w-full bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20">
+                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-xl text-sm font-bold text-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-cyan-500/20">
                 {tgSaving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Salvando…</> : <><Send className="w-4 h-4" /> Salvar e testar</>}
               </button>
 
@@ -1651,7 +1753,7 @@ export default function HyperliquidPro() {
       {/* ═══ DELETE MODAL ══════════════════════════════════════════════════════ */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+          <div className="bg-[#070e1c] border border-red-500/20 rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 bg-red-500/20 rounded-xl flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -1683,10 +1785,10 @@ export default function HyperliquidPro() {
       {/* ═══ ADD WALLET MODAL ══════════════════════════════════════════════════ */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+          <div className="bg-[#070e1c] border border-cyan-900/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-black flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-400" /> Adicionar Whale
+                <Plus className="w-4 h-4 text-cyan-400" /> Adicionar Whale
               </h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-500 hover:text-white p-1 hover:bg-white/5 rounded-lg transition-all">
                 <X className="w-4 h-4" />
@@ -1697,13 +1799,13 @@ export default function HyperliquidPro() {
                 <label className="text-xs text-slate-400 block mb-1.5 font-semibold">Endereço da Wallet</label>
                 <input type="text" value={addAddress} onChange={e => setAddAddress(e.target.value)}
                   placeholder="0x0000…0000"
-                  className="w-full bg-slate-800/60 border border-slate-600/60 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500 transition-all" />
+                  className="w-full bg-[#050b18]/80 border border-cyan-900/40 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500/60 transition-all" />
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1.5 font-semibold">Apelido <span className="text-slate-600 font-normal">(opcional)</span></label>
                 <input type="text" value={addNickname} onChange={e => setAddNickname(e.target.value)}
                   placeholder="Ex: Whale Alpha"
-                  className="w-full bg-slate-800/60 border border-slate-600/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-all" />
+                  className="w-full bg-[#050b18]/80 border border-cyan-900/40 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500/60 transition-all" />
               </div>
             </div>
             {addError && (
@@ -1717,7 +1819,7 @@ export default function HyperliquidPro() {
                 Cancelar
               </button>
               <button onClick={handleAddWhale} disabled={addLoading || !addAddress.trim()}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all">
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-bold text-black flex items-center justify-center gap-2 transition-all">
                 {addLoading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Adicionando…</> : <><Plus className="w-4 h-4" /> Adicionar</>}
               </button>
             </div>
