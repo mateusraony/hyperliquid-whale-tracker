@@ -488,8 +488,8 @@ export default function HyperliquidPro() {
   const cumulativePnlData = (() => {
     if (!tradesData.length) return [];
     const byDate = {};
-    tradesData.filter(t => t.pnl != null && t.open_timestamp).forEach(t => {
-      const day = new Date(t.open_timestamp).toLocaleDateString('pt-BR');
+    tradesData.filter(t => t.pnl != null && t.status === 'closed' && t.close_timestamp).forEach(t => {
+      const day = new Date(t.close_timestamp).toLocaleDateString('pt-BR');
       byDate[day] = (byDate[day] || 0) + Number(t.pnl);
     });
     let running = 0;
@@ -779,7 +779,7 @@ export default function HyperliquidPro() {
                           const heat = marginPct;
                           const initials = (w.nickname || w.address || '?').slice(0, 2).toUpperCase();
                           const heatRingColor = heat >= 80 ? '#ef4444' : heat >= 60 ? '#f97316' : heat >= 40 ? '#f59e0b' : '#10b981';
-                          const heatDash = (heat * 0.942).toFixed(1);
+                          const heatDash = (heat * 0.6912).toFixed(1);
                           const isHighRisk = w.liquidation_risk === 'Alto';
                           return (
                             <div key={w.address}
@@ -791,7 +791,7 @@ export default function HyperliquidPro() {
                                       <svg width="32" height="32" viewBox="0 0 32 32" className="absolute inset-0">
                                         <circle cx="16" cy="16" r="15" fill="#0a1628" stroke="#0e2d4a" strokeWidth="1.5" />
                                         <circle cx="16" cy="16" r="11" fill="none" stroke={heatRingColor} strokeWidth="2"
-                                          strokeDasharray={`${heatDash} 94.2`} strokeLinecap="round"
+                                          strokeDasharray={`${heatDash} 69.12`} strokeLinecap="round"
                                           transform="rotate(-90 16 16)" opacity="0.8" />
                                       </svg>
                                       <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-cyan-300">
