@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   RadialBarChart, RadialBar,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -108,9 +108,27 @@ function generateInsight(whalesData, globalMetrics) {
   };
 }
 
+function buildActivityFeed(whalesData) {
+  const events = [];
+  whalesData.forEach(w => {
+    (w.active_positions || []).forEach(p => {
+      events.push({
+        whale: w.nickname || fmtAddr(w.address),
+        coin: p.coin,
+        side: p.size > 0 ? 'LONG' : 'SHORT',
+        value: p.position_value || 0,
+        pnl: p.unrealized_pnl || 0,
+        leverage: p.leverage,
+        risk: w.liquidation_risk,
+      });
+    });
+  });
+  return events.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+}
+
 // ─── sub-components ──────────────────────────────────────────────────────────
 
-function GlowCard({ label, value, sub, color = 'cyan', icon: Icon, trend, heat }) {
+function GlowCard({ label, value, sub, color = 'cyan', icon: Icon, trend, heat, sparkData, sparkColor }) {
   const border =
     color === 'cyan'    ? 'border-cyan-500/20 hover:border-cyan-500/40' :
     color === 'emerald' ? 'border-emerald-500/20 hover:border-emerald-500/40' :
@@ -159,6 +177,15 @@ function GlowCard({ label, value, sub, color = 'cyan', icon: Icon, trend, heat }
         )}
       </div>
       <p className={`text-xl font-black font-mono tabular-nums ${valColor} leading-none`}>{value}</p>
+      {sparkData && sparkData.length > 1 && (
+        <div className="h-8 -mx-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={sparkData}>
+              <Line dataKey="v" stroke={sparkColor || '#22d3ee'} dot={false} strokeWidth={1.5} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
       {(sub || trend !== undefined) && (
         <div className="flex items-center justify-between">
           {sub && <p className="text-[10px] text-slate-600">{sub}</p>}
@@ -309,6 +336,10 @@ export default function HyperliquidPro() {
   const [simulatorCapital, setSimulatorCapital] = useState(10000);
   const [lbSort, setLbSort] = useState('pnl');
   const [now, setNow] = useState(new Date());
+  const [flashPnl, setFlashPnl] = useState(null);
+  const prevPnlRef = useRef(null);
+  const [pnlHistory, setPnlHistory] = useState([]);
+  const [valueHistory, setValueHistory] = useState([]);
 
   // ── loaders ────────────────────────────────────────────────────────────────
 
@@ -383,6 +414,20 @@ export default function HyperliquidPro() {
     const iv = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(iv);
   }, []);
+
+  useEffect(() => {
+    if (!whalesData.length) return;
+    const totalPnl = whalesData.reduce((s, w) => s + (w.unrealized_pnl || 0), 0);
+    const totalValue = whalesData.reduce((s, w) => s + (w.account_value || 0), 0);
+    if (prevPnlRef.current !== null && prevPnlRef.current !== totalPnl) {
+      const dir = totalPnl > prevPnlRef.current ? 'up' : 'down';
+      setFlashPnl(dir);
+      setTimeout(() => setFlashPnl(null), 1200);
+    }
+    prevPnlRef.current = totalPnl;
+    setPnlHistory(prev => [...prev.slice(-19), { v: totalPnl }]);
+    setValueHistory(prev => [...prev.slice(-19), { v: totalValue }]);
+  }, [whalesData]);
 
   useEffect(() => {
     if (tab === 'trades'    && !tradesData.length   && !tradesLoading)      loadTrades();
@@ -483,6 +528,17 @@ export default function HyperliquidPro() {
     lbSort === 'pnl'       ? (b.unrealized_pnl || 0)          - (a.unrealized_pnl || 0) :
     lbSort === 'value'     ? (b.account_value || 0)            - (a.account_value || 0) :
                              (b.active_positions?.length || 0) - (a.active_positions?.length || 0)
+  );
+
+  const activityFeed = buildActivityFeed(whalesData);
+
+  const tickerPositions = whalesData.flatMap(w =>
+    (w.active_positions || []).map(p => ({
+      coin: p.coin,
+      side: p.size > 0 ? 'LONG' : 'SHORT',
+      pnl: p.unrealized_pnl || 0,
+      whale: w.nickname || fmtAddr(w.address),
+    }))
   );
 
   const cumulativePnlData = (() => {
@@ -599,6 +655,24 @@ export default function HyperliquidPro() {
         </div>
       </header>
 
+      {/* ═══ TICKER TAPE ═════════════════════════════════════════════════════ */}
+      {tickerPositions.length > 0 && (
+        <div className="border-b border-cyan-900/20 bg-[#040912]/60 overflow-hidden py-1.5">
+          <div className="flex gap-6 ticker-track whitespace-nowrap" style={{ width: 'max-content', animation: 'tickerScroll 30s linear infinite' }}>
+            {[...tickerPositions, ...tickerPositions].map((p, i) => (
+              <span key={i} className="inline-flex items-center gap-1.5 text-[11px] font-mono px-2">
+                <span className={`w-1.5 h-1.5 rounded-full ${p.side === 'LONG' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                <span className="font-black text-slate-300">{p.coin}</span>
+                <span className={`font-semibold ${p.side === 'LONG' ? 'text-emerald-400' : 'text-red-400'}`}>{p.side}</span>
+                <span className={`tabular-nums ${p.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{fmt(p.pnl)}</span>
+                <span className="text-slate-700">·</span>
+                <span className="text-slate-600">{p.whale}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ═══ MAIN ════════════════════════════════════════════════════════════ */}
       <main className="max-w-screen-2xl mx-auto px-4 py-5">
 
@@ -615,9 +689,13 @@ export default function HyperliquidPro() {
 
         {/* ── COMMAND ─────────────────────────────────────────────────────── */}
         {tab === 'command' && (
-          <div className="space-y-5 fade-in">
+          <div className="fade-in">
             {loading && !whalesData.length ? <TabSpinner /> : (
-              <>
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+                {/* ── LEFT COLUMN (2/3) ─────────────────────────────────── */}
+                <div className="xl:col-span-2 space-y-4">
+
                 {/* AI Insight Banner */}
                 {insight && (
                   <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border-l-2 border ${
@@ -640,16 +718,20 @@ export default function HyperliquidPro() {
                 )}
 
                 {/* GlowCards — 5 main metrics */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   <GlowCard label="Portfolio Total" icon={Wallet}
                     value={fmt(globalMetrics.totalValue)}
                     sub={`${globalMetrics.totalWhales} whales`}
-                    color="emerald" />
+                    color="emerald"
+                    sparkData={valueHistory}
+                    sparkColor="#10b981" />
                   <GlowCard label="PnL Não Realizado" icon={globalMetrics.totalPnl >= 0 ? TrendingUp : TrendingDown}
                     value={fmt(globalMetrics.totalPnl)}
                     sub={globalMetrics.totalPnl >= 0 ? 'Em lucro' : 'Em prejuízo'}
                     color={globalMetrics.totalPnl >= 0 ? 'emerald' : 'red'}
-                    trend={globalMetrics.totalValue > 0 ? (globalMetrics.totalPnl / globalMetrics.totalValue) * 100 : 0} />
+                    trend={globalMetrics.totalValue > 0 ? (globalMetrics.totalPnl / globalMetrics.totalValue) * 100 : 0}
+                    sparkData={pnlHistory}
+                    sparkColor={globalMetrics.totalPnl >= 0 ? '#10b981' : '#ef4444'} />
                   <GlowCard label="Posições Abertas" icon={BarChart3}
                     value={globalMetrics.totalPositions}
                     sub="posições ativas"
@@ -664,13 +746,40 @@ export default function HyperliquidPro() {
                     color="orange" />
                 </div>
 
+                {/* LONG/SHORT momentum bar — full width, prominent */}
+                {globalMetrics.totalPositions > 0 && (() => {
+                  const lPct = (globalMetrics.totalLongs / globalMetrics.totalPositions) * 100;
+                  const sPct = 100 - lPct;
+                  const bias = lPct >= 60 ? 'Alta dominante' : lPct <= 40 ? 'Baixa dominante' : 'Mercado neutro';
+                  const biasColor = lPct >= 60 ? 'text-emerald-400' : lPct <= 40 ? 'text-red-400' : 'text-slate-400';
+                  return (
+                    <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Momentum de Mercado</p>
+                        <span className={`text-xs font-bold ${biasColor}`}>{bias}</span>
+                      </div>
+                      <div className="flex h-3 rounded-full overflow-hidden gap-0.5 mb-2">
+                        <div className="bg-emerald-500 rounded-l-full transition-all duration-700 relative overflow-hidden"
+                          style={{ width: `${lPct}%` }}>
+                          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shine-sweep" />
+                        </div>
+                        <div className="bg-red-500 rounded-r-full flex-1 transition-all duration-700" />
+                      </div>
+                      <div className="flex justify-between text-xs font-mono tabular-nums">
+                        <span className="text-emerald-400 font-black">{globalMetrics.totalLongs} LONG <span className="text-emerald-600">{lPct.toFixed(1)}%</span></span>
+                        <span className="text-red-400 font-black"><span className="text-red-600">{sPct.toFixed(1)}%</span> SHORT {globalMetrics.totalShorts}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Charts row */}
                 {whalesData.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* LONG/SHORT donut */}
+                    {/* PnL Donut */}
                     <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5">
                       <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                         Distribuição Long / Short
                       </p>
                       {globalMetrics.totalPositions === 0
@@ -695,16 +804,16 @@ export default function HyperliquidPro() {
                                   <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
                                   <span className="text-xs text-slate-400">LONG</span>
                                 </div>
-                                <p className="text-xl font-black text-emerald-400">{globalMetrics.totalLongs}</p>
-                                <p className="text-xs text-slate-500">{globalMetrics.totalPositions > 0 ? ((globalMetrics.totalLongs / globalMetrics.totalPositions) * 100).toFixed(1) : 0}%</p>
+                                <p className="text-xl font-black font-mono tabular-nums text-emerald-400">{globalMetrics.totalLongs}</p>
+                                <p className="text-xs text-emerald-600 font-mono">{globalMetrics.totalPositions > 0 ? ((globalMetrics.totalLongs / globalMetrics.totalPositions) * 100).toFixed(1) : 0}%</p>
                               </div>
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="w-2.5 h-2.5 rounded-sm bg-orange-500" />
                                   <span className="text-xs text-slate-400">SHORT</span>
                                 </div>
-                                <p className="text-xl font-black text-orange-400">{globalMetrics.totalShorts}</p>
-                                <p className="text-xs text-slate-500">{globalMetrics.totalPositions > 0 ? ((globalMetrics.totalShorts / globalMetrics.totalPositions) * 100).toFixed(1) : 0}%</p>
+                                <p className="text-xl font-black font-mono tabular-nums text-orange-400">{globalMetrics.totalShorts}</p>
+                                <p className="text-xs text-orange-700 font-mono">{globalMetrics.totalPositions > 0 ? ((globalMetrics.totalShorts / globalMetrics.totalPositions) * 100).toFixed(1) : 0}%</p>
                               </div>
                             </div>
                           </div>
@@ -715,7 +824,7 @@ export default function HyperliquidPro() {
                     {/* Top whales bar chart */}
                     <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-5">
                       <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                         Top Whales por Portfólio
                       </p>
                       {whaleBarData.length === 0
@@ -750,17 +859,17 @@ export default function HyperliquidPro() {
                     <div key={period} onClick={() => setExpandedMetric(expandedMetric === period ? null : period)}
                       className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4 cursor-pointer hover:border-red-500/20 transition-all">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Liquidações {period}</p>
+                        <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest">Liquidações {period}</p>
                         {expandedMetric === period ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
                       </div>
                       <p className="text-xl font-black font-mono tabular-nums text-red-400">{fmt(data.total)}</p>
                       <p className="text-xs text-slate-600 mt-0.5 font-mono">{data.trades} trades</p>
                       {expandedMetric === period && (
-                        <div className="mt-3 pt-3 border-t border-slate-700/50 grid grid-cols-2 gap-2 text-xs">
-                          <div><p className="text-slate-500 mb-0.5">Lucro</p><p className="font-bold text-emerald-400">{fmt(data.profit)}</p></div>
-                          <div><p className="text-slate-500 mb-0.5">Média</p><p className="font-bold text-blue-400">{fmt(data.total / data.trades)}</p></div>
-                          <div><p className="text-slate-500 mb-0.5">LONGs</p><p className="font-bold text-emerald-400">{data.longs}</p></div>
-                          <div><p className="text-slate-500 mb-0.5">SHORTs</p><p className="font-bold text-orange-400">{data.shorts}</p></div>
+                        <div className="mt-3 pt-3 border-t border-cyan-900/20 grid grid-cols-2 gap-2 text-xs">
+                          <div><p className="text-slate-600 mb-0.5 text-[10px] uppercase tracking-widest">Lucro</p><p className="font-bold font-mono text-emerald-400">{fmt(data.profit)}</p></div>
+                          <div><p className="text-slate-600 mb-0.5 text-[10px] uppercase tracking-widest">Média</p><p className="font-bold font-mono text-cyan-400">{fmt(data.total / data.trades)}</p></div>
+                          <div><p className="text-slate-600 mb-0.5 text-[10px] uppercase tracking-widest">LONGs</p><p className="font-bold font-mono text-emerald-400">{data.longs}</p></div>
+                          <div><p className="text-slate-600 mb-0.5 text-[10px] uppercase tracking-widest">SHORTs</p><p className="font-bold font-mono text-orange-400">{data.shorts}</p></div>
                         </div>
                       )}
                     </div>
@@ -878,7 +987,39 @@ export default function HyperliquidPro() {
                     )
                   }
                 </div>
-              </>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4 xl:sticky xl:top-20">
+                    <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                      Atividade ao Vivo
+                    </p>
+                    <div className="space-y-2 max-h-[70vh] overflow-y-auto no-scrollbar">
+                      {activityFeed.length === 0
+                        ? <p className="text-slate-600 text-xs text-center py-8">Sem posições ativas</p>
+                        : activityFeed.map((ev, i) => (
+                          <div key={i} className={`flex items-start gap-2.5 p-2.5 rounded-lg border ${ev.side === 'LONG' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-red-500/5 border-red-500/10'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${ev.side === 'LONG' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-slate-400 text-[10px] font-semibold truncate">{ev.whale}</span>
+                                <span className={`text-[10px] font-bold font-mono shrink-0 ${ev.side === 'LONG' ? 'text-emerald-400' : 'text-red-400'}`}>{ev.side}</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-1 mt-0.5">
+                                <span className="font-black text-white text-sm">{ev.coin}</span>
+                                <span className={`text-xs font-mono tabular-nums font-bold ${ev.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{fmt(ev.pnl)}</span>
+                              </div>
+                              <p className="text-[10px] text-slate-600 font-mono mt-0.5">{fmt(ev.value)}{ev.leverage ? ` · ${ev.leverage.toFixed(0)}×` : ''}</p>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             )}
           </div>
         )}

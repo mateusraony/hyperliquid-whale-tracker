@@ -39,6 +39,11 @@ code {
 }
 .whale-high-risk { animation: riskPulse 3s ease-in-out infinite; }
 
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 body::after {
   content: '';
   position: fixed;
