@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, Cell,
+  PieChart, Pie,
   RadialBarChart, RadialBar,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, Bell, Activity, Target, Brain, Award, BarChart3,
@@ -849,6 +850,77 @@ export default function HyperliquidPro() {
                     </div>
                   )}
 
+                  {/* ── CHARTS SECTION — donut + whale bar ───────────── */}
+                  {globalMetrics.totalPositions > 0 && (
+                    <div className="grid grid-cols-2 gap-4">
+
+                      {/* Donut — LONG vs SHORT */}
+                      <div className="bg-[#100d26]/70 border border-violet-900/25 rounded-xl overflow-hidden">
+                        <div className="h-px bg-gradient-to-r from-violet-600/0 via-violet-500/50 to-violet-600/0" />
+                        <div className="p-4">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Onde estão apostando</p>
+                          <p className="text-[11px] text-slate-600 mb-3">Distribuição das posições abertas agora</p>
+                          <div className="relative">
+                            <ResponsiveContainer width="100%" height={150}>
+                              <PieChart>
+                                <Pie data={longShortPieData} innerRadius={48} outerRadius={68}
+                                  startAngle={90} endAngle={-270} dataKey="value" strokeWidth={0}>
+                                  {longShortPieData.map((entry, i) => (
+                                    <Cell key={i} fill={entry.fill} opacity={0.9} />
+                                  ))}
+                                </Pie>
+                                <Tooltip {...CHART_STYLE} formatter={(v, n) => [v + ' posições', n]} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                            {/* Center text */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                              {globalMetrics.totalPositions > 0 ? (
+                                <>
+                                  <p className="text-2xl font-black emerald-grad-text leading-none">
+                                    {((globalMetrics.totalLongs / globalMetrics.totalPositions) * 100).toFixed(0)}%
+                                  </p>
+                                  <p className="text-[10px] text-emerald-400 font-bold mt-0.5">COMPRANDO</p>
+                                </>
+                              ) : <p className="text-slate-600 text-xs">Sem dados</p>}
+                            </div>
+                          </div>
+                          <div className="flex justify-center gap-5 text-[11px] mt-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                              <span className="text-slate-400">▲ LONG <span className="font-black text-emerald-400">{globalMetrics.totalLongs}</span></span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-sm bg-orange-500" />
+                              <span className="text-slate-400">▼ SHORT <span className="font-black text-orange-400">{globalMetrics.totalShorts}</span></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bar chart — top whales */}
+                      <div className="bg-[#100d26]/70 border border-violet-900/25 rounded-xl overflow-hidden">
+                        <div className="h-px bg-gradient-to-r from-amber-600/0 via-amber-400/50 to-amber-600/0" />
+                        <div className="p-4">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Maiores Carteiras</p>
+                          <p className="text-[11px] text-slate-600 mb-3">Capital monitorado por baleia</p>
+                          <ResponsiveContainer width="100%" height={150}>
+                            <BarChart data={whaleBarData} layout="vertical" margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
+                              <XAxis type="number" hide />
+                              <YAxis type="category" dataKey="name" width={62} tick={{ fontSize: 10, fill: '#64748b', fontFamily: 'ui-monospace, monospace' }} />
+                              <Tooltip {...CHART_STYLE} formatter={(v) => [fmt(v), 'Portfólio']} />
+                              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                                {whaleBarData.map((_, i) => (
+                                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
+
                   {/* POSITIONS GRID — one tile per open position */}
                   {globalMetrics.totalPositions > 0 && (
                     <div>
@@ -862,32 +934,55 @@ export default function HyperliquidPro() {
                           (w.active_positions || []).map((p, pi) => {
                             const isLong = p.size > 0;
                             const positivePnl = (p.unrealized_pnl || 0) >= 0;
-                            return (
-                              <div key={`${wi}-${pi}`}
-                                className={`rounded-xl overflow-hidden border transition-all ${
-                                  isLong
-                                    ? 'bg-[#0b1c12]/80 border-emerald-500/20 hover:border-emerald-500/40'
-                                    : 'bg-[#1c0b0b]/80 border-red-500/20 hover:border-red-500/40'
-                                }`}>
-                                <div className={`h-0.5 ${isLong ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400/80 to-emerald-600/0' : 'bg-gradient-to-r from-red-600/0 via-red-400/80 to-red-600/0'}`} />
-                                <div className="p-3">
-                                  <div className="flex items-start justify-between mb-1.5">
-                                    <span className="font-black text-white text-base leading-none">{p.coin}</span>
-                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isLong ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                      {isLong ? '▲' : '▼'}
-                                    </span>
+                            return (() => {
+                                const entry = Number(p.entry_price || 0);
+                                const mark  = Number(p.mark_px || 0);
+                                const movePct = entry > 0 ? ((mark - entry) / entry) * 100 : 0;
+                                const movePctDisplay = isLong ? movePct : -movePct;
+                                return (
+                                  <div key={`${wi}-${pi}`}
+                                    className={`rounded-xl overflow-hidden border transition-all ${
+                                      isLong
+                                        ? 'bg-[#0b1c12]/80 border-emerald-500/20 hover:border-emerald-500/40'
+                                        : 'bg-[#1c0b0b]/80 border-red-500/20 hover:border-red-500/40'
+                                    }`}>
+                                    <div className={`h-0.5 ${isLong ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400/80 to-emerald-600/0' : 'bg-gradient-to-r from-red-600/0 via-red-400/80 to-red-600/0'}`} />
+                                    <div className="p-3">
+                                      <div className="flex items-start justify-between mb-1.5">
+                                        <span className="font-black text-white text-base leading-none">{p.coin}</span>
+                                        <div className="flex flex-col items-end gap-0.5">
+                                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isLong ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                            {isLong ? '▲ L' : '▼ S'}
+                                          </span>
+                                          {p.leverage && <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-1 py-0.5 rounded">{p.leverage.toFixed(0)}×</span>}
+                                        </div>
+                                      </div>
+                                      <p className={`text-base font-black font-mono tabular-nums leading-none ${positivePnl ? 'emerald-grad-text' : 'red-grad-text'}`}>
+                                        {positivePnl ? '+' : ''}{fmt(p.unrealized_pnl)}
+                                      </p>
+                                      {/* Entry → Current price movement */}
+                                      {entry > 0 && mark > 0 && (
+                                        <div className="mt-2 mb-1">
+                                          <div className="flex items-center justify-between text-[9px] text-slate-600 font-mono mb-0.5">
+                                            <span>${entry.toFixed(2)}</span>
+                                            <span className={`font-bold ${movePctDisplay >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                              {movePctDisplay >= 0 ? '+' : ''}{movePctDisplay.toFixed(2)}%
+                                            </span>
+                                            <span className="text-cyan-500">${mark.toFixed(2)}</span>
+                                          </div>
+                                          <div className="h-0.5 bg-slate-800 rounded-full overflow-hidden">
+                                            <div
+                                              className={`h-full rounded-full transition-all duration-700 ${positivePnl ? 'bg-gradient-to-r from-emerald-600 to-emerald-400' : 'bg-gradient-to-r from-red-600 to-red-400'}`}
+                                              style={{ width: `${Math.min(100, Math.max(5, 50 + movePctDisplay * 5))}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                      <p className="text-[9px] text-slate-500 truncate">{w.nickname || fmtAddr(w.address)}</p>
+                                    </div>
                                   </div>
-                                  <p className={`text-lg font-black font-mono tabular-nums leading-none ${positivePnl ? 'emerald-grad-text' : 'red-grad-text'}`}>
-                                    {positivePnl ? '+' : ''}{fmt(p.unrealized_pnl)}
-                                  </p>
-                                  <p className="text-[10px] text-slate-500 mt-1.5 truncate">{w.nickname || fmtAddr(w.address)}</p>
-                                  <div className="flex items-center justify-between mt-0.5">
-                                    <p className="text-[10px] text-slate-600 font-mono">{fmt(p.position_value)}</p>
-                                    {p.leverage && <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-1 rounded">{p.leverage.toFixed(0)}×</span>}
-                                  </div>
-                                </div>
-                              </div>
-                            );
+                                );
+                              })()
                           })
                         )}
                       </div>
@@ -938,24 +1033,41 @@ export default function HyperliquidPro() {
                                       {isHighRisk && <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-full shrink-0">⚠ Risco Alto</span>}
                                       {w.liquidation_risk === 'Médio' && <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">Médio</span>}
                                     </div>
-                                    {/* Position chips */}
+                                    {/* Position chips + visual bar */}
                                     {positions.length > 0 && (
-                                      <div className="flex flex-wrap gap-1">
-                                        {positions.slice(0, 5).map((p, i) => (
-                                          <span key={i} className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
-                                            p.size > 0
-                                              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                              : 'bg-red-500/10 border-red-500/20 text-red-400'
-                                          }`}>
-                                            {p.size > 0 ? '▲' : '▼'} {p.coin}
-                                            <span className={`ml-0.5 font-mono ${(p.unrealized_pnl || 0) >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
-                                              {(p.unrealized_pnl || 0) >= 0 ? '+' : ''}{fmt(p.unrealized_pnl)}
+                                      <div>
+                                        <div className="flex flex-wrap gap-1 mb-1.5">
+                                          {positions.slice(0, 4).map((p, i) => (
+                                            <span key={i} className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
+                                              p.size > 0
+                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                                : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                            }`}>
+                                              {p.size > 0 ? '▲' : '▼'} {p.coin}
+                                              <span className={`ml-0.5 font-mono ${(p.unrealized_pnl || 0) >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                                                {(p.unrealized_pnl || 0) >= 0 ? '+' : ''}{fmt(p.unrealized_pnl)}
+                                              </span>
                                             </span>
-                                          </span>
-                                        ))}
-                                        {positions.length > 5 && (
-                                          <span className="text-[10px] text-slate-600 px-1.5 py-0.5">+{positions.length - 5}</span>
-                                        )}
+                                          ))}
+                                          {positions.length > 4 && (
+                                            <span className="text-[10px] text-slate-600 px-1.5 py-0.5 bg-slate-800/40 rounded-md">+{positions.length - 4}</span>
+                                          )}
+                                        </div>
+                                        {/* Visual position distribution bar */}
+                                        {(() => {
+                                          const total = positions.reduce((s, p) => s + Math.abs(p.position_value || 0), 0);
+                                          return total > 0 ? (
+                                            <div className="flex h-1 rounded-full overflow-hidden gap-px">
+                                              {positions.map((p, i) => (
+                                                <div key={i}
+                                                  title={`${p.coin}: ${fmt(p.position_value)}`}
+                                                  className={`h-full ${p.size > 0 ? 'bg-emerald-500' : 'bg-orange-500'}`}
+                                                  style={{ width: `${(Math.abs(p.position_value || 0) / total) * 100}%`, opacity: 0.7 + (i === 0 ? 0.3 : 0) }}
+                                                />
+                                              ))}
+                                            </div>
+                                          ) : null;
+                                        })()}
                                       </div>
                                     )}
                                   </div>
@@ -1070,8 +1182,53 @@ export default function HyperliquidPro() {
 
                 </div>
 
-                {/* ── RIGHT COLUMN (1/3) — Activity Feed ─────────────────── */}
+                {/* ── RIGHT COLUMN (1/3) — Gauge + Activity Feed ──────────── */}
                 <div className="space-y-4">
+
+                  {/* ── SENTIMENT GAUGE ────────────────────────────────── */}
+                  {(() => {
+                    const bullPct = globalMetrics.totalPositions > 0
+                      ? (globalMetrics.totalLongs / globalMetrics.totalPositions) * 100
+                      : 50;
+                    const isBull = bullPct >= 60;
+                    const isBear = bullPct <= 40;
+                    const gaugeColor = isBull ? '#10b981' : isBear ? '#ef4444' : '#f59e0b';
+                    const gaugeData = [{ value: bullPct, fill: gaugeColor }];
+                    return (
+                      <div className="bg-[#100d26]/70 border border-violet-900/25 rounded-xl overflow-hidden">
+                        <div className="h-px bg-gradient-to-r from-violet-600/0 via-violet-500/50 to-violet-600/0" />
+                        <div className="p-4 pb-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`w-1.5 h-1.5 rounded-full ambient-glow ${isBull ? 'bg-emerald-400' : isBear ? 'bg-red-400' : 'bg-amber-400'}`} />
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sentimento do Mercado</p>
+                          </div>
+                          <p className="text-[11px] text-slate-600 mb-2">O que as baleias acreditam agora</p>
+                          <div className="relative">
+                            <ResponsiveContainer width="100%" height={110}>
+                              <RadialBarChart innerRadius={38} outerRadius={62}
+                                startAngle={180} endAngle={0}
+                                data={gaugeData}>
+                                <RadialBar dataKey="value" cornerRadius={6}
+                                  background={{ fill: '#1e1533' }} />
+                              </RadialBarChart>
+                            </ResponsiveContainer>
+                            <div className="absolute bottom-1 inset-x-0 flex flex-col items-center pointer-events-none">
+                              <p className={`text-2xl font-black font-mono leading-none ${isBull ? 'emerald-grad-text' : isBear ? 'red-grad-text' : 'text-amber-400'}`}>{bullPct.toFixed(0)}%</p>
+                              <p className="text-[10px] font-bold mt-0.5 text-slate-500">
+                                {isBull ? '🟢 MERCADO COMPRADOR' : isBear ? '🔴 MERCADO VENDEDOR' : '🟡 INDEFINIDO'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex justify-between text-[10px] px-2 mt-1">
+                            <span className="text-red-500 font-bold">VENDA</span>
+                            <span className="text-amber-500">NEUTRO</span>
+                            <span className="text-emerald-500 font-bold">COMPRA</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="bg-[#100d26]/60 border border-violet-900/25 rounded-xl overflow-hidden xl:sticky xl:top-20">
                     <div className="h-px bg-gradient-to-r from-violet-600/0 via-violet-500/60 to-violet-600/0" />
                     <div className="p-4">
@@ -1117,14 +1274,31 @@ export default function HyperliquidPro() {
                                   {ev.pnlPct >= 0 ? '+' : ''}{ev.pnlPct.toFixed(2)}%
                                 </span>
                               </div>
-                              {/* Row 3: entry · value */}
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-[10px] text-slate-600 font-mono">
-                                  {ev.entryPrice ? `Entrada $${Number(ev.entryPrice).toFixed(2)}` : ''}
-                                  {ev.markPrice  ? ` → $${Number(ev.markPrice).toFixed(2)}` : ''}
-                                </span>
-                                <span className="text-[10px] text-slate-600 font-mono">{fmt(ev.value)}</span>
-                              </div>
+                              {/* Row 3: price movement visual */}
+                              {ev.entryPrice && ev.markPrice && (() => {
+                                const entry = Number(ev.entryPrice);
+                                const mark  = Number(ev.markPrice);
+                                const raw   = ((mark - entry) / entry) * 100;
+                                const dir   = ev.side === 'LONG' ? raw : -raw;
+                                const pct   = Math.min(100, Math.max(5, 50 + dir * 3));
+                                return (
+                                  <div className="mt-2">
+                                    <div className="flex justify-between text-[9px] font-mono text-slate-600 mb-0.5">
+                                      <span>${entry.toFixed(2)}</span>
+                                      <span className={dir >= 0 ? 'text-emerald-500 font-bold' : 'text-red-500 font-bold'}>
+                                        {dir >= 0 ? '▲' : '▼'} {Math.abs(dir).toFixed(2)}%
+                                      </span>
+                                      <span className={ev.side === 'LONG' ? 'text-emerald-400' : 'text-red-400'}>${mark.toFixed(2)}</span>
+                                    </div>
+                                    <div className="h-0.5 bg-slate-800 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${ev.pnl >= 0 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400' : 'bg-gradient-to-r from-red-600 to-red-400'}`}
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Hover tooltip — full whale context */}
