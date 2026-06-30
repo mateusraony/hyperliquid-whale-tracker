@@ -144,7 +144,7 @@ function buildActivityFeed(whalesData) {
 
 function GlowCard({ label, value, sub, color = 'violet', icon: Icon, trend, heat, sparkData, sparkColor, goldValue }) {
   const border =
-    color === 'violet'  ? 'border-violet-500/25 hover:border-violet-500/50' :
+    color === 'violet'  ? 'border-sky-500/25 hover:border-sky-500/50' :
     color === 'cyan'    ? 'border-cyan-500/20 hover:border-cyan-500/40' :
     color === 'emerald' ? 'border-emerald-500/20 hover:border-emerald-500/40' :
     color === 'red'     ? 'border-red-500/20 hover:border-red-500/40' :
@@ -153,9 +153,9 @@ function GlowCard({ label, value, sub, color = 'violet', icon: Icon, trend, heat
     color === 'purple'  ? 'border-purple-500/20 hover:border-purple-500/40' :
     color === 'orange'  ? 'border-orange-500/20 hover:border-orange-500/40' :
     color === 'blue'    ? 'border-blue-500/20 hover:border-blue-500/40' :
-                          'border-violet-500/25 hover:border-violet-500/50';
+                          'border-sky-500/25 hover:border-sky-500/50';
   const topBar =
-    color === 'violet'  ? 'from-transparent via-violet-500/60 to-transparent' :
+    color === 'violet'  ? 'from-transparent via-sky-500/60 to-transparent' :
     color === 'cyan'    ? 'from-transparent via-cyan-400/60 to-transparent' :
     color === 'emerald' ? 'from-transparent via-emerald-400/60 to-transparent' :
     color === 'red'     ? 'from-transparent via-red-400/60 to-transparent' :
@@ -164,9 +164,9 @@ function GlowCard({ label, value, sub, color = 'violet', icon: Icon, trend, heat
     color === 'purple'  ? 'from-transparent via-purple-400/60 to-transparent' :
     color === 'orange'  ? 'from-transparent via-orange-400/60 to-transparent' :
     color === 'blue'    ? 'from-transparent via-blue-400/60 to-transparent' :
-                          'from-transparent via-violet-500/60 to-transparent';
+                          'from-transparent via-sky-500/60 to-transparent';
   const iconBg =
-    color === 'violet'  ? 'bg-violet-500/15 text-violet-300' :
+    color === 'violet'  ? 'bg-sky-500/15 text-sky-300' :
     color === 'cyan'    ? 'bg-cyan-500/10 text-cyan-400' :
     color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' :
     color === 'red'     ? 'bg-red-500/10 text-red-400' :
@@ -175,9 +175,9 @@ function GlowCard({ label, value, sub, color = 'violet', icon: Icon, trend, heat
     color === 'purple'  ? 'bg-purple-500/10 text-purple-400' :
     color === 'orange'  ? 'bg-orange-500/10 text-orange-400' :
     color === 'blue'    ? 'bg-blue-500/10 text-blue-400' :
-                          'bg-violet-500/15 text-violet-300';
+                          'bg-sky-500/15 text-sky-300';
   const valColor =
-    color === 'violet'  ? 'text-violet-300' :
+    color === 'violet'  ? 'text-sky-300' :
     color === 'cyan'    ? 'text-cyan-300' :
     color === 'emerald' ? 'text-emerald-400' :
     color === 'red'     ? 'text-red-400' :
@@ -186,14 +186,14 @@ function GlowCard({ label, value, sub, color = 'violet', icon: Icon, trend, heat
     color === 'purple'  ? 'text-purple-400' :
     color === 'orange'  ? 'text-orange-400' :
     color === 'blue'    ? 'text-blue-400' :
-                          'text-violet-300';
+                          'text-sky-300';
   const sparkStroke = sparkColor ||
-    (color === 'violet'  ? '#8b5cf6' :
+    (color === 'violet'  ? '#38bdf8' :
      color === 'gold'    ? '#f59e0b' :
      color === 'emerald' ? '#10b981' :
-     color === 'red'     ? '#ef4444' : '#8b5cf6');
+     color === 'red'     ? '#ef4444' : '#38bdf8');
   return (
-    <div className={`bg-[#100d26]/70 backdrop-blur border ${border} rounded-xl overflow-hidden flex flex-col gap-0 shadow-lg transition-all duration-200`}>
+    <div className={`bg-[#060f1c]/70 backdrop-blur border ${border} rounded-xl overflow-hidden flex flex-col gap-0 shadow-lg transition-all duration-200`}>
       {/* Premium top accent bar */}
       <div className={`h-px bg-gradient-to-r ${topBar}`} />
       <div className="p-3.5 flex flex-col gap-2">
@@ -311,10 +311,10 @@ function RefreshBtn({ onClick, loading, label = 'Atualizar' }) {
 }
 
 const CHART_STYLE = {
-  contentStyle: { background: '#0e0b20', border: '1px solid #2d1f6e', borderRadius: '12px', fontSize: 11, fontFamily: 'ui-monospace, monospace', padding: '10px 14px' },
-  itemStyle: { color: '#a78bfa' },
+  contentStyle: { background: '#060f1c', border: '1px solid #0c2a4a', borderRadius: '12px', fontSize: 11, fontFamily: 'ui-monospace, monospace', padding: '10px 14px' },
+  itemStyle: { color: '#38bdf8' },
 };
-const CHART_COLORS = ['#8b5cf6','#06b6d4','#f59e0b','#10b981','#f97316','#ec4899','#3b82f6','#84cc16'];
+const CHART_COLORS = ['#38bdf8','#0ea5e9','#f59e0b','#10b981','#f97316','#ec4899','#3b82f6','#84cc16'];
 
 // ─── main component ──────────────────────────────────────────────────────────
 
@@ -561,6 +561,29 @@ export default function HyperliquidPro() {
                              (b.active_positions?.length || 0) - (a.active_positions?.length || 0)
   );
 
+  // Coin capital distribution for Positions tab chart
+  const coinCapitalData = (() => {
+    const map = {};
+    whalesData.forEach(w => (w.active_positions || []).forEach(p => {
+      const val = Math.abs(p.position_value || 0);
+      if (!map[p.coin]) map[p.coin] = { coin: p.coin, value: 0, longs: 0, shorts: 0, pnl: 0 };
+      map[p.coin].value += val;
+      map[p.coin].pnl += (p.unrealized_pnl || 0);
+      p.size > 0 ? map[p.coin].longs++ : map[p.coin].shorts++;
+    }));
+    return Object.values(map).sort((a, b) => b.value - a.value).slice(0, 8);
+  })();
+
+  // Risk distribution for Risk tab chart
+  const riskDistData = [
+    { name: 'Alto', value: whalesData.filter(w => w.liquidation_risk === 'Alto').length, fill: '#ef4444' },
+    { name: 'Médio', value: whalesData.filter(w => w.liquidation_risk === 'Médio').length, fill: '#f59e0b' },
+    { name: 'Baixo', value: whalesData.filter(w => !['Alto','Médio'].includes(w.liquidation_risk)).length, fill: '#10b981' },
+  ].filter(d => d.value > 0);
+
+  // Orders buy/sell split for Orders tab
+  const ordersBuySell = { buy: allOrders.filter(o => o.side === 'B' || String(o.side).toLowerCase().includes('buy')).length, sell: allOrders.length - allOrders.filter(o => o.side === 'B' || String(o.side).toLowerCase().includes('buy')).length };
+
   const activityFeed = buildActivityFeed(whalesData);
 
   const tickerPositions = whalesData.flatMap(w =>
@@ -609,8 +632,8 @@ export default function HyperliquidPro() {
       <style>{`
         ::-webkit-scrollbar { width:4px; height:4px; }
         ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:#2d1f6e; border-radius:8px; }
-        ::-webkit-scrollbar-thumb:hover { background:#4c1d95; }
+        ::-webkit-scrollbar-thumb { background:#0c2548; border-radius:8px; }
+        ::-webkit-scrollbar-thumb:hover { background:#164e63; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .fade-in { animation: fadeIn 0.3s ease both; }
         .no-scrollbar { scrollbar-width:none; }
@@ -618,24 +641,24 @@ export default function HyperliquidPro() {
       `}</style>
 
       {/* ═══ HEADER ═══════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 border-b border-violet-900/30 bg-[#060412]/85 backdrop-blur-xl">
-        {/* Ultra-thin rainbow accent line at very top */}
-        <div className="h-px bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500" />
+      <header className="sticky top-0 z-50 border-b border-sky-900/30 bg-[#030810]/85 backdrop-blur-xl">
+        {/* Ultra-thin accent line at very top */}
+        <div className="h-px bg-gradient-to-r from-sky-500 via-blue-400 to-cyan-500" />
         <div className="max-w-screen-2xl mx-auto px-4">
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/40 ring-1 ring-violet-400/20">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/40 ring-1 ring-sky-400/20">
                 <Activity className="w-4 h-4 text-white" />
               </div>
               <div className="leading-tight">
-                <p className="font-black text-sm tracking-tight violet-text">Hyperliquid Pro</p>
+                <p className="font-black text-sm tracking-tight sky-grad-text">Hyperliquid Pro</p>
                 <p className="text-[10px] text-slate-600 font-medium tracking-wider uppercase">Whale Tracker</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/5 border border-violet-500/10 text-[10px] font-mono text-slate-500">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 ambient-glow" />
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/5 border border-sky-500/10 text-[10px] font-mono text-slate-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 ambient-glow" />
                 {now.toLocaleTimeString('pt-BR')}
               </div>
 
@@ -653,16 +676,16 @@ export default function HyperliquidPro() {
               </div>
 
               <button onClick={loadWhalesData} disabled={loading}
-                className="p-1.5 rounded-lg hover:bg-violet-500/10 text-slate-500 hover:text-violet-400 transition-all">
+                className="p-1.5 rounded-lg hover:bg-sky-500/10 text-slate-500 hover:text-sky-400 transition-all">
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               </button>
 
-              <button className="p-1.5 rounded-lg hover:bg-violet-500/10 text-slate-500 hover:text-violet-400 transition-all">
+              <button className="p-1.5 rounded-lg hover:bg-sky-500/10 text-slate-500 hover:text-sky-400 transition-all">
                 <Bell className="w-3.5 h-3.5" />
               </button>
 
               <button onClick={() => { setAddError(null); setShowAddModal(true); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 hover:from-violet-600/30 hover:to-fuchsia-600/30 border border-violet-500/40 hover:border-violet-500/70 rounded-xl text-xs font-bold text-violet-300 transition-all">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-sky-600/20 to-blue-600/20 hover:from-sky-600/30 hover:to-blue-600/30 border border-sky-500/40 hover:border-sky-500/70 rounded-xl text-xs font-bold text-sky-300 transition-all">
                 <Plus className="w-3.5 h-3.5" /> Add Wallet
               </button>
             </div>
@@ -676,10 +699,10 @@ export default function HyperliquidPro() {
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all ${
                     active
-                      ? 'border-violet-400 text-violet-200'
+                      ? 'border-sky-400 text-sky-200'
                       : 'border-transparent text-slate-600 hover:text-slate-300 hover:border-slate-700'
                   }`}>
-                  <Icon className={`w-3.5 h-3.5 ${active ? 'text-violet-400' : ''}`} />
+                  <Icon className={`w-3.5 h-3.5 ${active ? 'text-sky-400' : ''}`} />
                   {t.label}
                 </button>
               );
@@ -748,7 +771,7 @@ export default function HyperliquidPro() {
                           isBuying  ? 'border-emerald-500/20' :
                           isSelling ? 'border-red-500/20' :
                                       'border-amber-500/20'
-                        } bg-[#100d26]/70`}>
+                        } bg-[#060f1c]/70`}>
                           <div className={`h-0.5 ${isBuying ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400 to-emerald-600/0' : isSelling ? 'bg-gradient-to-r from-red-600/0 via-red-400 to-red-600/0' : 'bg-gradient-to-r from-amber-600/0 via-amber-400 to-amber-600/0'}`} />
                           <div className="p-5">
                             <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3">As baleias estão</p>
@@ -771,7 +794,7 @@ export default function HyperliquidPro() {
                     })()}
 
                     {/* Card 2: PnL */}
-                    <div className={`rounded-2xl overflow-hidden border ${globalMetrics.totalPnl >= 0 ? 'border-emerald-500/20' : 'border-red-500/20'} bg-[#100d26]/70`}>
+                    <div className={`rounded-2xl overflow-hidden border ${globalMetrics.totalPnl >= 0 ? 'border-emerald-500/20' : 'border-red-500/20'} bg-[#060f1c]/70`}>
                       <div className={`h-0.5 ${globalMetrics.totalPnl >= 0 ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400 to-emerald-600/0' : 'bg-gradient-to-r from-red-600/0 via-red-400 to-red-600/0'}`} />
                       <div className="p-5">
                         <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3">
@@ -798,7 +821,7 @@ export default function HyperliquidPro() {
                     </div>
 
                     {/* Card 3: Capital — gold gradient */}
-                    <div className="rounded-2xl overflow-hidden border border-amber-500/20 bg-[#100d26]/70">
+                    <div className="rounded-2xl overflow-hidden border border-amber-500/20 bg-[#060f1c]/70">
                       <div className="h-0.5 bg-gradient-to-r from-amber-600/0 via-amber-400 to-amber-600/0" />
                       <div className="p-5">
                         <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3">Capital Total</p>
@@ -823,20 +846,20 @@ export default function HyperliquidPro() {
                       narrative.color === 'emerald' ? 'border-emerald-500/20' :
                       narrative.color === 'red'     ? 'border-red-500/20' :
                       narrative.color === 'amber'   ? 'border-amber-500/20' :
-                                                      'border-violet-500/20'
-                    } bg-[#100d26]/50`}>
+                                                      'border-sky-500/20'
+                    } bg-[#060f1c]/50`}>
                       <div className={`h-0.5 ${
                         narrative.color === 'emerald' ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400 to-emerald-600/0' :
                         narrative.color === 'red'     ? 'bg-gradient-to-r from-red-600/0 via-red-400 to-red-600/0' :
                         narrative.color === 'amber'   ? 'bg-gradient-to-r from-amber-600/0 via-amber-400 to-amber-600/0' :
-                                                        'bg-gradient-to-r from-violet-600/0 via-violet-400 to-violet-600/0'
+                                                        'bg-gradient-to-r from-sky-600/0 via-sky-400 to-sky-600/0'
                       }`} />
                       <div className="px-4 py-4">
                         <div className="flex items-center gap-2 mb-2">
                           <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
                             narrative.color === 'emerald' ? 'bg-emerald-400' :
                             narrative.color === 'red'     ? 'bg-red-400' :
-                            narrative.color === 'amber'   ? 'bg-amber-400' : 'bg-violet-400'
+                            narrative.color === 'amber'   ? 'bg-amber-400' : 'bg-sky-400'
                           }`} />
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">O que está acontecendo agora</p>
                         </div>
@@ -844,7 +867,7 @@ export default function HyperliquidPro() {
                           narrative.color === 'emerald' ? 'text-emerald-200/90' :
                           narrative.color === 'red'     ? 'text-red-200/90' :
                           narrative.color === 'amber'   ? 'text-amber-200/90' :
-                                                          'text-violet-200/90'
+                                                          'text-sky-200/90'
                         }`}>{narrative.emoji} {narrative.text}</p>
                       </div>
                     </div>
@@ -855,8 +878,8 @@ export default function HyperliquidPro() {
                     <div className="grid grid-cols-2 gap-4">
 
                       {/* Donut — LONG vs SHORT */}
-                      <div className="bg-[#100d26]/70 border border-violet-900/25 rounded-xl overflow-hidden">
-                        <div className="h-px bg-gradient-to-r from-violet-600/0 via-violet-500/50 to-violet-600/0" />
+                      <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                        <div className="h-px bg-gradient-to-r from-sky-600/0 via-sky-500/50 to-sky-600/0" />
                         <div className="p-4">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Onde estão apostando</p>
                           <p className="text-[11px] text-slate-600 mb-3">Distribuição das posições abertas agora</p>
@@ -898,7 +921,7 @@ export default function HyperliquidPro() {
                       </div>
 
                       {/* Bar chart — top whales */}
-                      <div className="bg-[#100d26]/70 border border-violet-900/25 rounded-xl overflow-hidden">
+                      <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
                         <div className="h-px bg-gradient-to-r from-amber-600/0 via-amber-400/50 to-amber-600/0" />
                         <div className="p-4">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Maiores Carteiras</p>
@@ -925,9 +948,9 @@ export default function HyperliquidPro() {
                   {globalMetrics.totalPositions > 0 && (
                     <div>
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 ambient-glow" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 ambient-glow" />
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Posições Abertas Agora ({globalMetrics.totalPositions})</p>
-                        <div className="h-px flex-1 bg-gradient-to-r from-violet-500/30 to-transparent" />
+                        <div className="h-px flex-1 bg-gradient-to-r from-sky-500/30 to-transparent" />
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                         {whalesData.flatMap((w, wi) =>
@@ -993,12 +1016,12 @@ export default function HyperliquidPro() {
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <Users className="w-3.5 h-3.5 text-violet-400" />
+                        <Users className="w-3.5 h-3.5 text-sky-400" />
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Baleias Monitoradas ({whalesData.length})</p>
-                        <div className="h-px w-16 bg-gradient-to-r from-violet-500/30 to-transparent" />
+                        <div className="h-px w-16 bg-gradient-to-r from-sky-500/30 to-transparent" />
                       </div>
                       <button onClick={() => { setAddError(null); setShowAddModal(true); }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-violet-400 hover:text-violet-300 transition-colors">
+                        className="flex items-center gap-1 text-[10px] font-bold text-sky-400 hover:text-sky-300 transition-colors">
                         <Plus className="w-3 h-3" /> Adicionar
                       </button>
                     </div>
@@ -1018,11 +1041,11 @@ export default function HyperliquidPro() {
                                 <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border border-l-2 ${riskBorderLeft(w.liquidation_risk)} ${
                                   isHighRisk
                                     ? 'bg-red-500/5 border-red-500/10 whale-high-risk'
-                                    : 'bg-[#100d26]/60 border-violet-900/20'
+                                    : 'bg-[#060f1c]/60 border-sky-900/20'
                                 } hover:bg-[#160e32]/80 transition-all cursor-default`}>
                                   {/* Avatar */}
                                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black shrink-0 ring-1 ${
-                                    isHighRisk ? 'bg-red-500/15 text-red-300 ring-red-500/20' : 'bg-violet-500/10 text-violet-300 ring-violet-500/20'
+                                    isHighRisk ? 'bg-red-500/15 text-red-300 ring-red-500/20' : 'bg-sky-500/10 text-sky-300 ring-sky-500/20'
                                   }`}>
                                     {(w.nickname || w.address || '?').slice(0, 2).toUpperCase()}
                                   </div>
@@ -1195,8 +1218,8 @@ export default function HyperliquidPro() {
                     const gaugeColor = isBull ? '#10b981' : isBear ? '#ef4444' : '#f59e0b';
                     const gaugeData = [{ value: bullPct, fill: gaugeColor }];
                     return (
-                      <div className="bg-[#100d26]/70 border border-violet-900/25 rounded-xl overflow-hidden">
-                        <div className="h-px bg-gradient-to-r from-violet-600/0 via-violet-500/50 to-violet-600/0" />
+                      <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                        <div className="h-px bg-gradient-to-r from-sky-600/0 via-sky-500/50 to-sky-600/0" />
                         <div className="p-4 pb-3">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`w-1.5 h-1.5 rounded-full ambient-glow ${isBull ? 'bg-emerald-400' : isBear ? 'bg-red-400' : 'bg-amber-400'}`} />
@@ -1229,15 +1252,15 @@ export default function HyperliquidPro() {
                     );
                   })()}
 
-                  <div className="bg-[#100d26]/60 border border-violet-900/25 rounded-xl overflow-hidden xl:sticky xl:top-20">
-                    <div className="h-px bg-gradient-to-r from-violet-600/0 via-violet-500/60 to-violet-600/0" />
+                  <div className="bg-[#060f1c]/60 border border-sky-900/25 rounded-xl overflow-hidden xl:sticky xl:top-20">
+                    <div className="h-px bg-gradient-to-r from-sky-600/0 via-sky-500/60 to-sky-600/0" />
                     <div className="p-4">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 ambient-glow" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 ambient-glow" />
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Atividade ao Vivo</p>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-600 bg-violet-500/5 border border-violet-500/10 px-2 py-0.5 rounded-full">{activityFeed.length} pos.</span>
+                      <span className="text-[10px] font-mono text-slate-600 bg-sky-500/5 border border-sky-500/10 px-2 py-0.5 rounded-full">{activityFeed.length} pos.</span>
                     </div>
                     <div className="space-y-2 max-h-[70vh] overflow-y-auto no-scrollbar">
                       {activityFeed.length === 0
@@ -1395,6 +1418,65 @@ export default function HyperliquidPro() {
                 </div>
               }
             />
+            {/* ── Coin Distribution Chart ─────────────────────────── */}
+            {coinCapitalData.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {/* Capital por coin — horizontal bars */}
+                <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                  <div className="h-px bg-gradient-to-r from-sky-600/0 via-sky-500/50 to-sky-600/0" />
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Capital por Token</p>
+                    <p className="text-[11px] text-slate-600 mb-3">Volume total de posições abertas</p>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={coinCapitalData} layout="vertical" margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="coin" width={48} tick={{ fontSize: 10, fill: '#64748b', fontFamily: 'ui-monospace, monospace' }} />
+                        <Tooltip {...CHART_STYLE} formatter={(v, n, p) => [fmt(v), `${p.payload.longs}L/${p.payload.shorts}S`]} />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                          {coinCapitalData.map((d, i) => (
+                            <Cell key={i} fill={d.longs >= d.shorts ? '#10b981' : '#f97316'} opacity={0.85} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 text-[10px] mt-1 justify-center">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-emerald-500" /> Maioria LONG</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-orange-500" /> Maioria SHORT</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PnL por coin — donut */}
+                <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                  <div className="h-px bg-gradient-to-r from-amber-600/0 via-amber-400/50 to-amber-600/0" />
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Distribuição por Token</p>
+                    <p className="text-[11px] text-slate-600 mb-3">Participação de cada coin no portfólio</p>
+                    <div className="relative">
+                      <ResponsiveContainer width="100%" height={130}>
+                        <PieChart>
+                          <Pie data={coinCapitalData} innerRadius={38} outerRadius={58} dataKey="value" strokeWidth={0}>
+                            {coinCapitalData.map((_, i) => (
+                              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} opacity={0.9} />
+                            ))}
+                          </Pie>
+                          <Tooltip {...CHART_STYLE} formatter={(v, n, p) => [fmt(v), p.payload.coin]} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px] mt-1">
+                      {coinCapitalData.slice(0, 5).map((d, i) => (
+                        <span key={d.coin} className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                          <span className="text-slate-500">{d.coin}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {loading ? <TabSpinner /> :
               globalMetrics.totalPositions === 0
                 ? <EmptyState icon={BarChart3} title="Nenhuma posição aberta" sub="As posições das whales serão exibidas aqui" />
@@ -1403,7 +1485,7 @@ export default function HyperliquidPro() {
                     {whalesData.flatMap(whale =>
                       (whale.active_positions || []).map((pos, i) => (
                         <div key={`${whale.address}-${i}`}
-                          className={`bg-slate-800/40 border border-white/5 border-l-4 ${pos.unrealized_pnl >= 0 ? 'border-l-emerald-500' : 'border-l-red-500'} rounded-2xl p-4`}>
+                          className={`bg-[#060f1c]/70 border border-sky-900/20 border-l-4 ${pos.unrealized_pnl >= 0 ? 'border-l-emerald-500' : 'border-l-red-500'} rounded-xl p-4`}>
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -1521,11 +1603,74 @@ export default function HyperliquidPro() {
         {tab === 'orders' && (
           <div className="fade-in">
             <SectionHeader title={`Ordens Abertas (${allOrders.length})`} icon={Clock} iconClass="text-amber-400" />
+            {/* ── Orders Summary ──────────────────────────────────── */}
+            {allOrders.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                {/* Buy vs Sell donut */}
+                <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                  <div className="h-px bg-gradient-to-r from-sky-600/0 via-sky-500/50 to-sky-600/0" />
+                  <div className="p-4 flex flex-col items-center">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 self-start">Compra vs Venda</p>
+                    <div className="relative">
+                      <ResponsiveContainer width={120} height={120}>
+                        <PieChart>
+                          <Pie data={[
+                            { name: 'Compra', value: ordersBuySell.buy, fill: '#10b981' },
+                            { name: 'Venda', value: ordersBuySell.sell, fill: '#f97316' },
+                          ]} innerRadius={32} outerRadius={48} dataKey="value" strokeWidth={0}>
+                            <Cell fill="#10b981" />
+                            <Cell fill="#f97316" />
+                          </Pie>
+                          <Tooltip {...CHART_STYLE} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <p className="text-lg font-black text-white leading-none">{allOrders.length}</p>
+                        <p className="text-[9px] text-slate-600">ordens</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 text-[11px] mt-2">
+                      <span className="text-emerald-400 font-bold">▲ {ordersBuySell.buy} compra</span>
+                      <span className="text-orange-400 font-bold">▼ {ordersBuySell.sell} venda</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top whales with orders */}
+                <div className="md:col-span-2 bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                  <div className="h-px bg-gradient-to-r from-amber-600/0 via-amber-400/50 to-amber-600/0" />
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Ordens por Whale</p>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <BarChart
+                        data={(() => {
+                          const map = {};
+                          allOrders.forEach(o => {
+                            const key = o.whale?.nickname || fmtAddr(o.whale?.address);
+                            if (!map[key]) map[key] = { name: key.slice(0, 10), buy: 0, sell: 0 };
+                            const isBuy = o.side === 'B' || String(o.side).toLowerCase().includes('buy');
+                            isBuy ? map[key].buy++ : map[key].sell++;
+                          });
+                          return Object.values(map);
+                        })()}
+                        margin={{ top: 0, right: 8, left: -16, bottom: 0 }}>
+                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#475569' }} />
+                        <YAxis hide />
+                        <Tooltip {...CHART_STYLE} />
+                        <Bar dataKey="buy" fill="#10b981" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="sell" fill="#f97316" radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {loading ? <TabSpinner />
               : allOrders.length === 0
                 ? <EmptyState icon={Clock} title="Nenhuma ordem aberta" sub="As ordens abertas das whales aparecerão aqui" />
               : (
-                <div className="bg-slate-800/40 border border-white/5 rounded-2xl overflow-hidden">
+                <div className="bg-[#060f1c]/70 border border-sky-900/20 rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-900/60">
@@ -1602,7 +1747,7 @@ export default function HyperliquidPro() {
                     </div>
 
                     {/* Volume split */}
-                    <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-5">
+                    <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl p-5">
                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Volume por Lado</p>
                       <div className="space-y-4">
                         <div>
@@ -1627,7 +1772,7 @@ export default function HyperliquidPro() {
                     </div>
 
                     {/* Divergences */}
-                    <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-5">
+                    <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl p-5">
                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                         <Zap className="w-3.5 h-3.5 text-amber-400" /> Smart Money Divergências
                       </p>
@@ -1665,7 +1810,7 @@ export default function HyperliquidPro() {
                         const total = t.longs + t.shorts;
                         const lPct = total > 0 ? (t.longs / total) * 100 : 50;
                         return (
-                          <div key={i} className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 hover:border-blue-500/20 transition-all">
+                          <div key={i} className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl p-4 hover:border-sky-500/30 transition-all">
                             <div className="flex items-center justify-between mb-3">
                               <span className="font-black text-lg">{t.token}</span>
                               <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${
@@ -1714,7 +1859,7 @@ export default function HyperliquidPro() {
                 <>
                   {/* RadarChart for top whale */}
                   {aiScores[0] && (
-                    <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-5">
+                    <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl p-5">
                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                         Perfil de Performance — <span className="text-purple-400">{aiScores[0].nickname}</span>
                       </p>
@@ -1741,13 +1886,13 @@ export default function HyperliquidPro() {
                   {/* Whale score list */}
                   <div className="space-y-3">
                     {aiScores.map((s, i) => (
-                      <div key={s.address} className="bg-slate-800/40 border border-white/5 rounded-2xl p-5 hover:border-purple-500/20 transition-all">
+                      <div key={s.address} className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl p-5 hover:border-sky-500/30 transition-all">
                         <div className="flex items-start gap-4">
                           <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-black text-sm shrink-0 shadow-lg ${
                             i === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-600 text-black' :
                             i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-black' :
                             i === 2 ? 'bg-gradient-to-br from-amber-700 to-orange-800 text-white' :
-                                      'bg-gradient-to-br from-blue-600 to-violet-600 text-white'
+                                      'bg-gradient-to-br from-sky-600 to-blue-700 text-white'
                           }`}>
                             {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                           </div>
@@ -1814,7 +1959,7 @@ export default function HyperliquidPro() {
                       { label: 'Correlações Sig.',   val: correlation.significant_correlations, color: 'text-blue-400'   },
                       { label: 'Grupos Detectados', val: correlation.highly_correlated_groups?.length || 0, color: 'text-purple-400' },
                     ].map(m => (
-                      <div key={m.label} className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 text-center">
+                      <div key={m.label} className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl p-4 text-center">
                         <p className={`text-3xl font-black ${m.color}`}>{m.val}</p>
                         <p className="text-xs text-slate-500 mt-1">{m.label}</p>
                       </div>
@@ -1823,7 +1968,7 @@ export default function HyperliquidPro() {
 
                   {/* Bar chart for correlation matrix */}
                   {(correlation.correlation_matrix || []).length > 0 && (
-                    <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-5">
+                    <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl p-5">
                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Top Pares por Correlação</p>
                       <div className="h-56">
                         <ResponsiveContainer width="100%" height="100%">
@@ -1852,7 +1997,7 @@ export default function HyperliquidPro() {
                   )}
 
                   {(correlation.highly_correlated_groups || []).length > 0 && (
-                    <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-5">
+                    <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl p-5">
                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Grupos Altamente Correlacionados ≥75%</p>
                       <div className="flex flex-wrap gap-3">
                         {correlation.highly_correlated_groups.map(g => (
@@ -1868,7 +2013,7 @@ export default function HyperliquidPro() {
                   )}
 
                   {(correlation.correlation_matrix || []).length > 0 && (
-                    <div className="bg-slate-800/40 border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
                       <div className="px-4 py-3 border-b border-white/5 font-semibold text-sm">Matriz Completa</div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -1913,6 +2058,68 @@ export default function HyperliquidPro() {
           <div className="space-y-5 fade-in">
             <SectionHeader title="Risco & Sinais Preditivos" icon={Shield} iconClass="text-red-400"
               action={<RefreshBtn onClick={loadSignals} loading={signalsLoading} />} />
+
+            {/* ── Risk Overview Charts ─────────────────────────────── */}
+            {whalesData.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                {/* Risk distribution donut */}
+                <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                  <div className="h-px bg-gradient-to-r from-red-600/0 via-red-400/50 to-red-600/0" />
+                  <div className="p-4 flex flex-col items-center">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 self-start">Distribuição de Risco</p>
+                    <div className="relative">
+                      <ResponsiveContainer width={130} height={130}>
+                        <PieChart>
+                          <Pie data={riskDistData} innerRadius={36} outerRadius={54} dataKey="value" strokeWidth={0}>
+                            {riskDistData.map((d, i) => <Cell key={i} fill={d.fill} opacity={0.9} />)}
+                          </Pie>
+                          <Tooltip {...CHART_STYLE} formatter={(v, n, p) => [v + ' whales', p.payload.name]} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <p className="text-xl font-black text-white leading-none">{whalesData.length}</p>
+                        <p className="text-[9px] text-slate-600">baleias</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-3 text-[11px] mt-2">
+                      {riskDistData.map(d => (
+                        <span key={d.name} className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full" style={{ background: d.fill }} />
+                          <span className="text-slate-400">{d.name} <strong>{d.value}</strong></span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Margin usage bars */}
+                <div className="md:col-span-2 bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                  <div className="h-px bg-gradient-to-r from-amber-600/0 via-amber-400/50 to-amber-600/0" />
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Margem Usada por Whale</p>
+                    <ResponsiveContainer width="100%" height={110}>
+                      <BarChart
+                        data={whalesData.map(w => ({
+                          name: (w.nickname || fmtAddr(w.address)).slice(0, 10),
+                          margin: w.account_value > 0 ? Math.min(100, (w.total_margin_used / w.account_value) * 100) : 0,
+                          risk: w.liquidation_risk,
+                        }))}
+                        margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="2 2" stroke="#0c2a4a" />
+                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#475569' }} />
+                        <YAxis tick={{ fontSize: 9, fill: '#475569' }} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                        <Tooltip {...CHART_STYLE} formatter={(v, n, p) => [`${v.toFixed(1)}% margem · ${p.payload.risk}`, p.payload.name]} />
+                        <Bar dataKey="margin" radius={[4, 4, 0, 0]}>
+                          {whalesData.map((w, i) => (
+                            <Cell key={i} fill={w.liquidation_risk === 'Alto' ? '#ef4444' : w.liquidation_risk === 'Médio' ? '#f59e0b' : '#10b981'} opacity={0.85} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Liquidation risk grid */}
             <div>
@@ -2105,6 +2312,60 @@ export default function HyperliquidPro() {
                 </div>
               }
             />
+            {leaderboard.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {/* PnL ranking bar chart */}
+                <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                  <div className="h-px bg-gradient-to-r from-sky-600/0 via-sky-500/50 to-sky-600/0" />
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">PnL Ranking</p>
+                    <p className="text-[11px] text-slate-600 mb-3">Lucro não realizado atual</p>
+                    <ResponsiveContainer width="100%" height={150}>
+                      <BarChart data={leaderboard.slice(0, 8).map(w => ({
+                        name: (w.nickname || fmtAddr(w.address)).slice(0, 10),
+                        pnl: w.unrealized_pnl || 0,
+                      }))} layout="vertical" margin={{ left: 4, right: 8, top: 0, bottom: 0 }}>
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="name" width={64} tick={{ fontSize: 9, fill: '#64748b', fontFamily: 'ui-monospace, monospace' }} />
+                        <Tooltip {...CHART_STYLE} formatter={(v) => [fmt(v), 'PnL']} />
+                        <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>
+                          {leaderboard.slice(0, 8).map((w, i) => (
+                            <Cell key={i} fill={(w.unrealized_pnl || 0) >= 0 ? '#10b981' : '#ef4444'} opacity={0.85} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Portfolio value ranking */}
+                <div className="bg-[#060f1c]/70 border border-sky-900/25 rounded-xl overflow-hidden">
+                  <div className="h-px bg-gradient-to-r from-amber-600/0 via-amber-400/50 to-amber-600/0" />
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Capital por Whale</p>
+                    <p className="text-[11px] text-slate-600 mb-3">Portfólio total monitorado</p>
+                    <ResponsiveContainer width="100%" height={150}>
+                      <BarChart
+                        data={[...whalesData].sort((a, b) => (b.account_value || 0) - (a.account_value || 0)).slice(0, 8).map(w => ({
+                          name: (w.nickname || fmtAddr(w.address)).slice(0, 10),
+                          value: w.account_value || 0,
+                        }))}
+                        layout="vertical" margin={{ left: 4, right: 8, top: 0, bottom: 0 }}>
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="name" width={64} tick={{ fontSize: 9, fill: '#64748b', fontFamily: 'ui-monospace, monospace' }} />
+                        <Tooltip {...CHART_STYLE} formatter={(v) => [fmt(v), 'Capital']} />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                          {whalesData.slice(0, 8).map((_, i) => (
+                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} opacity={0.85} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {loading ? <TabSpinner />
               : leaderboard.length === 0 ? <EmptyState icon={Trophy} title="Nenhuma whale monitorada" />
               : (
