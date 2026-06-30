@@ -112,14 +112,27 @@ function buildActivityFeed(whalesData) {
   const events = [];
   whalesData.forEach(w => {
     (w.active_positions || []).forEach(p => {
+      const value = p.position_value || 0;
+      const pnl   = p.unrealized_pnl || 0;
+      const pnlPct = value > 0 ? ((pnl / value) * 100) : 0;
       events.push({
-        whale: w.nickname || fmtAddr(w.address),
-        coin: p.coin,
-        side: p.size > 0 ? 'LONG' : 'SHORT',
-        value: p.position_value || 0,
-        pnl: p.unrealized_pnl || 0,
-        leverage: p.leverage,
-        risk: w.liquidation_risk,
+        whale:        w.nickname || fmtAddr(w.address),
+        whaleAddr:    w.address,
+        whaleValue:   w.account_value || 0,
+        whalePnl:     w.unrealized_pnl || 0,
+        whaleRisk:    w.liquidation_risk,
+        whalePositions: w.active_positions || [],
+        coin:         p.coin,
+        side:         p.size > 0 ? 'LONG' : 'SHORT',
+        value,
+        pnl,
+        pnlPct,
+        leverage:     p.leverage,
+        entryPrice:   p.entry_price,
+        markPrice:    p.mark_px,
+        liqPrice:     p.liquidation_px,
+        size:         Math.abs(p.size || 0),
+        risk:         w.liquidation_risk,
       });
     });
   });
@@ -827,7 +840,7 @@ export default function HyperliquidPro() {
                     </div>
                   )}
 
-                  {/* WHALE LIST — compact single-line rows */}
+                  {/* WHALE LIST — rich rows with hover tooltip */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest flex items-center gap-2">
@@ -847,51 +860,134 @@ export default function HyperliquidPro() {
                             const marginPct = w.account_value > 0 ? Math.min(100, (w.total_margin_used / w.account_value) * 100) : 0;
                             const isHighRisk = w.liquidation_risk === 'Alto';
                             const pnlPos = (w.unrealized_pnl || 0) >= 0;
+                            const pnlPct  = w.account_value > 0 ? ((w.unrealized_pnl || 0) / w.account_value) * 100 : 0;
+                            const positions = w.active_positions || [];
                             return (
-                              <div key={w.address}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl border border-l-2 ${riskBorderLeft(w.liquidation_risk)} ${
+                              <div key={w.address} className="relative group/whale">
+                                {/* Main row */}
+                                <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border border-l-2 ${riskBorderLeft(w.liquidation_risk)} ${
                                   isHighRisk
                                     ? 'bg-red-500/5 border-red-500/10 whale-high-risk'
                                     : 'bg-[#0a1628]/60 border-cyan-900/15'
-                                } hover:bg-[#0a1628]/90 transition-all`}>
-                                <div className="w-8 h-8 rounded-xl bg-cyan-500/10 flex items-center justify-center text-[10px] font-black text-cyan-300 shrink-0">
-                                  {(w.nickname || w.address || '?').slice(0, 2).toUpperCase()}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-0.5">
-                                    <span className="font-bold text-sm text-white truncate">{w.nickname || fmtAddr(w.address)}</span>
-                                    {isHighRisk && (
-                                      <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-full shrink-0">⚠ Risco Alto</span>
+                                } hover:bg-[#0d1e3a]/80 transition-all cursor-default`}>
+                                  {/* Avatar */}
+                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black shrink-0 ${
+                                    isHighRisk ? 'bg-red-500/15 text-red-300' : 'bg-cyan-500/10 text-cyan-300'
+                                  }`}>
+                                    {(w.nickname || w.address || '?').slice(0, 2).toUpperCase()}
+                                  </div>
+                                  {/* Name + stats */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-bold text-sm text-white truncate">{w.nickname || fmtAddr(w.address)}</span>
+                                      {isHighRisk && <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-full shrink-0">⚠ Risco Alto</span>}
+                                      {w.liquidation_risk === 'Médio' && <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">Médio</span>}
+                                    </div>
+                                    {/* Position chips */}
+                                    {positions.length > 0 && (
+                                      <div className="flex flex-wrap gap-1">
+                                        {positions.slice(0, 5).map((p, i) => (
+                                          <span key={i} className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
+                                            p.size > 0
+                                              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                              : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                          }`}>
+                                            {p.size > 0 ? '▲' : '▼'} {p.coin}
+                                            <span className={`ml-0.5 font-mono ${(p.unrealized_pnl || 0) >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                                              {(p.unrealized_pnl || 0) >= 0 ? '+' : ''}{fmt(p.unrealized_pnl)}
+                                            </span>
+                                          </span>
+                                        ))}
+                                        {positions.length > 5 && (
+                                          <span className="text-[10px] text-slate-600 px-1.5 py-0.5">+{positions.length - 5}</span>
+                                        )}
+                                      </div>
                                     )}
-                                    {w.error && (
-                                      <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">erro</span>
-                                    )}
                                   </div>
-                                  <div className="flex items-center gap-3 text-[10px]">
-                                    <span className="font-mono tabular-nums text-emerald-400 font-bold">{fmt(w.account_value)}</span>
-                                    <span className={`font-mono tabular-nums font-bold ${pnlPos ? 'text-emerald-400' : 'text-red-400'}`}>
-                                      {pnlPos ? '+' : ''}{fmt(w.unrealized_pnl)}
-                                    </span>
-                                    <span className="text-slate-500">{w.active_positions?.length || 0} posições</span>
-                                    <span className="text-slate-600">{fmtRel(w.last_update)}</span>
+                                  {/* Right metrics */}
+                                  <div className="text-right shrink-0">
+                                    <p className="font-black font-mono tabular-nums text-emerald-400 text-sm">{fmt(w.account_value)}</p>
+                                    <p className={`font-bold font-mono tabular-nums text-xs ${pnlPos ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {pnlPos ? '+' : ''}{fmt(w.unrealized_pnl)} <span className="text-[10px] opacity-70">({pnlPos ? '+' : ''}{pnlPct.toFixed(2)}%)</span>
+                                    </p>
+                                    <div className="w-24 mt-1">
+                                      <div className="flex justify-between text-[9px] text-slate-600 mb-0.5">
+                                        <span>Margem</span><span className="font-mono">{marginPct.toFixed(0)}%</span>
+                                      </div>
+                                      <ProgressBar value={marginPct} color={marginPct > 70 ? 'red' : marginPct > 40 ? 'amber' : 'emerald'} />
+                                    </div>
+                                  </div>
+                                  {/* Actions */}
+                                  <div className="flex flex-col gap-1 shrink-0">
+                                    <a href={`https://hypurrscan.io/address/${w.address}`} target="_blank" rel="noopener noreferrer"
+                                      className="p-1.5 rounded-lg text-slate-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all">
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>
+                                    <button onClick={() => { setWhaleToDelete(w); setShowDeleteModal(true); }}
+                                      className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
                                   </div>
                                 </div>
-                                <div className="w-20 shrink-0">
-                                  <div className="flex justify-between text-[9px] text-slate-600 mb-1">
-                                    <span>Margem</span>
-                                    <span className="font-mono">{marginPct.toFixed(0)}%</span>
+
+                                {/* Hover tooltip — detailed position breakdown */}
+                                <div className="absolute z-50 left-0 top-full mt-1 w-full opacity-0 group-hover/whale:opacity-100 pointer-events-none group-hover/whale:pointer-events-auto transition-all duration-150 shadow-2xl">
+                                  <div className="bg-[#070e1c] border border-cyan-900/40 rounded-xl p-4">
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-cyan-900/20">
+                                      <div>
+                                        <p className="font-bold text-white text-sm">{w.nickname || 'Anônimo'}</p>
+                                        <p className="text-[10px] text-slate-500 font-mono">{w.address}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest">Capital · PnL</p>
+                                        <p className="font-black font-mono text-emerald-400">{fmt(w.account_value)} <span className={pnlPos ? 'text-emerald-400' : 'text-red-400'}>{pnlPos ? '+' : ''}{fmt(w.unrealized_pnl)}</span></p>
+                                      </div>
+                                    </div>
+                                    {/* Positions table */}
+                                    {positions.length === 0
+                                      ? <p className="text-slate-600 text-xs text-center py-2">Sem posições abertas</p>
+                                      : (
+                                        <div className="space-y-1.5">
+                                          <div className="grid grid-cols-6 gap-2 text-[9px] text-slate-600 uppercase tracking-widest pb-1">
+                                            <span className="col-span-1">Moeda</span>
+                                            <span className="text-center">Direção</span>
+                                            <span className="text-right">Entrada</span>
+                                            <span className="text-right">Mark</span>
+                                            <span className="text-right">PnL</span>
+                                            <span className="text-right">Valor Pos.</span>
+                                          </div>
+                                          {positions.map((p, pi) => {
+                                            const isL = p.size > 0;
+                                            const ppnl = p.unrealized_pnl || 0;
+                                            const ppnlPct = p.position_value ? (ppnl / p.position_value) * 100 : 0;
+                                            return (
+                                              <div key={pi} className={`grid grid-cols-6 gap-2 items-center py-1.5 px-2 rounded-lg ${isL ? 'bg-emerald-500/5' : 'bg-red-500/5'}`}>
+                                                <span className="font-black text-white col-span-1 text-xs">{p.coin}</span>
+                                                <span className={`text-center text-[10px] font-bold ${isL ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                  {isL ? '▲ LONG' : '▼ SHORT'}{p.leverage ? ` ${p.leverage.toFixed(0)}×` : ''}
+                                                </span>
+                                                <span className="text-right text-[10px] font-mono text-slate-400">{p.entry_price ? `$${Number(p.entry_price).toFixed(2)}` : '—'}</span>
+                                                <span className="text-right text-[10px] font-mono text-cyan-400">{p.mark_px ? `$${Number(p.mark_px).toFixed(2)}` : '—'}</span>
+                                                <span className={`text-right text-[10px] font-black font-mono ${ppnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                  {ppnl >= 0 ? '+' : ''}{fmt(ppnl)}<br/>
+                                                  <span className="font-normal opacity-70">{ppnlPct >= 0 ? '+' : ''}{ppnlPct.toFixed(1)}%</span>
+                                                </span>
+                                                <span className="text-right text-[10px] font-mono text-slate-400">{fmt(p.position_value)}</span>
+                                              </div>
+                                            );
+                                          })}
+                                          {w.liquidation_risk === 'Alto' && (
+                                            <div className="mt-2 pt-2 border-t border-red-500/20 flex items-center gap-2">
+                                              <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                                              <p className="text-[10px] text-red-400">Risco alto de liquidação — posição perigosamente próxima do limite</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )
+                                    }
+                                    <p className="text-[9px] text-slate-700 mt-3">Atualizado {fmtRel(w.last_update)}</p>
                                   </div>
-                                  <ProgressBar value={marginPct} color={marginPct > 70 ? 'red' : marginPct > 40 ? 'amber' : 'emerald'} />
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <a href={`https://hypurrscan.io/address/${w.address}`} target="_blank" rel="noopener noreferrer"
-                                    className="p-1.5 rounded-lg text-slate-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all">
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                  </a>
-                                  <button onClick={() => { setWhaleToDelete(w); setShowDeleteModal(true); }}
-                                    className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
                                 </div>
                               </div>
                             );
@@ -906,26 +1002,93 @@ export default function HyperliquidPro() {
                 {/* ── RIGHT COLUMN (1/3) — Activity Feed ─────────────────── */}
                 <div className="space-y-4">
                   <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4 xl:sticky xl:top-20">
-                    <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                      Atividade ao Vivo
-                    </p>
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                        Atividade ao Vivo
+                      </p>
+                      <span className="text-[10px] text-slate-600">{activityFeed.length} posições</span>
+                    </div>
                     <div className="space-y-2 max-h-[70vh] overflow-y-auto no-scrollbar">
                       {activityFeed.length === 0
                         ? <p className="text-slate-600 text-xs text-center py-8">Sem posições ativas</p>
                         : activityFeed.map((ev, i) => (
-                          <div key={i} className={`flex items-start gap-2.5 p-2.5 rounded-lg border ${ev.side === 'LONG' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-red-500/5 border-red-500/10'}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${ev.side === 'LONG' ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-slate-400 text-[10px] font-semibold truncate">{ev.whale}</span>
-                                <span className={`text-[10px] font-bold font-mono shrink-0 ${ev.side === 'LONG' ? 'text-emerald-400' : 'text-red-400'}`}>{ev.side}</span>
+                          <div key={i} className="relative group/ev">
+                            {/* Feed card */}
+                            <div className={`rounded-xl border p-3 transition-all ${
+                              ev.side === 'LONG'
+                                ? 'bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/25 hover:bg-emerald-500/8'
+                                : 'bg-red-500/5 border-red-500/10 hover:border-red-500/25 hover:bg-red-500/8'
+                            }`}>
+                              {/* Row 1: coin + side badge + leverage */}
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-black text-white text-base leading-none">{ev.coin}</span>
+                                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${ev.side === 'LONG' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    {ev.side === 'LONG' ? '▲' : '▼'} {ev.side}
+                                  </span>
+                                  {ev.leverage && (
+                                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md">
+                                      {ev.leverage.toFixed(0)}×
+                                    </span>
+                                  )}
+                                </div>
+                                <span className={`text-sm font-black font-mono tabular-nums ${ev.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {ev.pnl >= 0 ? '+' : ''}{fmt(ev.pnl)}
+                                </span>
                               </div>
-                              <div className="flex items-center justify-between gap-1 mt-0.5">
-                                <span className="font-black text-white text-sm">{ev.coin}</span>
-                                <span className={`text-xs font-mono tabular-nums font-bold ${ev.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{fmt(ev.pnl)}</span>
+                              {/* Row 2: whale + PnL% */}
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-slate-400 font-semibold truncate max-w-[60%]">{ev.whale}</span>
+                                <span className={`text-[10px] font-mono ${ev.pnlPct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                  {ev.pnlPct >= 0 ? '+' : ''}{ev.pnlPct.toFixed(2)}%
+                                </span>
                               </div>
-                              <p className="text-[10px] text-slate-600 font-mono mt-0.5">{fmt(ev.value)}{ev.leverage ? ` · ${ev.leverage.toFixed(0)}×` : ''}</p>
+                              {/* Row 3: entry · value */}
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-[10px] text-slate-600 font-mono">
+                                  {ev.entryPrice ? `Entrada $${Number(ev.entryPrice).toFixed(2)}` : ''}
+                                  {ev.markPrice  ? ` → $${Number(ev.markPrice).toFixed(2)}` : ''}
+                                </span>
+                                <span className="text-[10px] text-slate-600 font-mono">{fmt(ev.value)}</span>
+                              </div>
+                            </div>
+
+                            {/* Hover tooltip — full whale context */}
+                            <div className="absolute z-50 right-0 top-full mt-1 w-72 opacity-0 group-hover/ev:opacity-100 pointer-events-none group-hover/ev:pointer-events-auto transition-all duration-150 shadow-2xl">
+                              <div className="bg-[#070e1c] border border-cyan-900/40 rounded-xl p-4">
+                                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Carteira</p>
+                                <div className="flex items-start justify-between mb-3">
+                                  <div>
+                                    <p className="font-bold text-white text-sm">{ev.whale}</p>
+                                    <p className="text-[10px] text-slate-600 font-mono">{fmtAddr(ev.whaleAddr)}</p>
+                                  </div>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${riskBadge(ev.whaleRisk)}`}>{ev.whaleRisk}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                                  <div className="bg-[#0a1628]/60 rounded-lg p-2">
+                                    <p className="text-slate-600 text-[9px] uppercase tracking-widest mb-0.5">Capital</p>
+                                    <p className="font-black text-emerald-400 font-mono">{fmt(ev.whaleValue)}</p>
+                                  </div>
+                                  <div className="bg-[#0a1628]/60 rounded-lg p-2">
+                                    <p className="text-slate-600 text-[9px] uppercase tracking-widest mb-0.5">PnL Total</p>
+                                    <p className={`font-black font-mono ${ev.whalePnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{ev.whalePnl >= 0 ? '+' : ''}{fmt(ev.whalePnl)}</p>
+                                  </div>
+                                </div>
+                                <p className="text-[9px] text-slate-600 uppercase tracking-widest mb-2">Esta posição</p>
+                                <div className="space-y-1.5 text-[10px]">
+                                  <div className="flex justify-between"><span className="text-slate-500">Tamanho</span><span className="font-mono text-slate-300">{ev.size.toFixed(4)} {ev.coin}</span></div>
+                                  <div className="flex justify-between"><span className="text-slate-500">Valor Posição</span><span className="font-mono text-slate-300">{fmt(ev.value)}</span></div>
+                                  {ev.entryPrice && <div className="flex justify-between"><span className="text-slate-500">Preço Entrada</span><span className="font-mono text-cyan-400">${Number(ev.entryPrice).toFixed(2)}</span></div>}
+                                  {ev.markPrice  && <div className="flex justify-between"><span className="text-slate-500">Preço Atual</span><span className="font-mono text-cyan-300">${Number(ev.markPrice).toFixed(2)}</span></div>}
+                                  {ev.liqPrice   && <div className="flex justify-between"><span className="text-slate-500">Liquidação em</span><span className="font-mono text-red-400 font-bold">${Number(ev.liqPrice).toFixed(2)}</span></div>}
+                                  <div className="flex justify-between pt-1 border-t border-cyan-900/20 mt-1">
+                                    <span className="text-slate-500">PnL</span>
+                                    <span className={`font-black font-mono ${ev.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{ev.pnl >= 0 ? '+' : ''}{fmt(ev.pnl)} ({ev.pnlPct >= 0 ? '+' : ''}{ev.pnlPct.toFixed(2)}%)</span>
+                                  </div>
+                                </div>
+                                <p className="text-[9px] text-slate-700 mt-3">Todas as posições desta carteira: {ev.whalePositions.length}</p>
+                              </div>
                             </div>
                           </div>
                         ))
