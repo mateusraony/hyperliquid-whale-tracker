@@ -2320,21 +2320,26 @@ export default function HyperliquidPro() {
                   <div className="p-4">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">PnL Ranking</p>
                     <p className="text-[11px] text-slate-600 mb-3">Lucro não realizado atual</p>
-                    <ResponsiveContainer width="100%" height={150}>
-                      <BarChart data={leaderboard.slice(0, 8).map(w => ({
-                        name: (w.nickname || fmtAddr(w.address)).slice(0, 10),
-                        pnl: w.unrealized_pnl || 0,
-                      }))} layout="vertical" margin={{ left: 4, right: 8, top: 0, bottom: 0 }}>
-                        <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="name" width={64} tick={{ fontSize: 9, fill: '#64748b', fontFamily: 'ui-monospace, monospace' }} />
-                        <Tooltip {...CHART_STYLE} formatter={(v) => [fmt(v), 'PnL']} />
-                        <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>
-                          {leaderboard.slice(0, 8).map((w, i) => (
-                            <Cell key={i} fill={(w.unrealized_pnl || 0) >= 0 ? '#10b981' : '#ef4444'} opacity={0.85} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {(() => {
+                      const pnlSorted = [...whalesData].sort((a, b) => (b.unrealized_pnl || 0) - (a.unrealized_pnl || 0)).slice(0, 8);
+                      return (
+                        <ResponsiveContainer width="100%" height={150}>
+                          <BarChart data={pnlSorted.map(w => ({
+                            name: (w.nickname || fmtAddr(w.address)).slice(0, 10),
+                            pnl: w.unrealized_pnl || 0,
+                          }))} layout="vertical" margin={{ left: 4, right: 8, top: 0, bottom: 0 }}>
+                            <XAxis type="number" hide />
+                            <YAxis type="category" dataKey="name" width={64} tick={{ fontSize: 9, fill: '#64748b', fontFamily: 'ui-monospace, monospace' }} />
+                            <Tooltip {...CHART_STYLE} formatter={(v) => [fmt(v), 'PnL']} />
+                            <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>
+                              {pnlSorted.map((w, i) => (
+                                <Cell key={i} fill={(w.unrealized_pnl || 0) >= 0 ? '#10b981' : '#ef4444'} opacity={0.85} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      );
+                    })()}
                   </div>
                 </div>
 
