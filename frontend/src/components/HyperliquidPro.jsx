@@ -141,75 +141,95 @@ function buildActivityFeed(whalesData) {
 
 // ─── sub-components ──────────────────────────────────────────────────────────
 
-function GlowCard({ label, value, sub, color = 'cyan', icon: Icon, trend, heat, sparkData, sparkColor }) {
+function GlowCard({ label, value, sub, color = 'violet', icon: Icon, trend, heat, sparkData, sparkColor, goldValue }) {
   const border =
+    color === 'violet'  ? 'border-violet-500/25 hover:border-violet-500/50' :
     color === 'cyan'    ? 'border-cyan-500/20 hover:border-cyan-500/40' :
     color === 'emerald' ? 'border-emerald-500/20 hover:border-emerald-500/40' :
     color === 'red'     ? 'border-red-500/20 hover:border-red-500/40' :
     color === 'amber'   ? 'border-amber-500/20 hover:border-amber-500/40' :
+    color === 'gold'    ? 'border-amber-400/30 hover:border-amber-400/60' :
     color === 'purple'  ? 'border-purple-500/20 hover:border-purple-500/40' :
     color === 'orange'  ? 'border-orange-500/20 hover:border-orange-500/40' :
     color === 'blue'    ? 'border-blue-500/20 hover:border-blue-500/40' :
-                          'border-cyan-500/20 hover:border-cyan-500/40';
-  const glow =
-    color === 'cyan'    ? 'shadow-cyan-500/5' :
-    color === 'emerald' ? 'shadow-emerald-500/5' :
-    color === 'red'     ? 'shadow-red-500/5' :
-    color === 'amber'   ? 'shadow-amber-500/5' :
-    color === 'purple'  ? 'shadow-purple-500/5' :
-    color === 'orange'  ? 'shadow-orange-500/5' :
-    color === 'blue'    ? 'shadow-blue-500/5' :
-                          'shadow-cyan-500/5';
+                          'border-violet-500/25 hover:border-violet-500/50';
+  const topBar =
+    color === 'violet'  ? 'from-transparent via-violet-500/60 to-transparent' :
+    color === 'cyan'    ? 'from-transparent via-cyan-400/60 to-transparent' :
+    color === 'emerald' ? 'from-transparent via-emerald-400/60 to-transparent' :
+    color === 'red'     ? 'from-transparent via-red-400/60 to-transparent' :
+    color === 'amber'   ? 'from-transparent via-amber-400/60 to-transparent' :
+    color === 'gold'    ? 'from-transparent via-yellow-400/80 to-transparent' :
+    color === 'purple'  ? 'from-transparent via-purple-400/60 to-transparent' :
+    color === 'orange'  ? 'from-transparent via-orange-400/60 to-transparent' :
+    color === 'blue'    ? 'from-transparent via-blue-400/60 to-transparent' :
+                          'from-transparent via-violet-500/60 to-transparent';
   const iconBg =
+    color === 'violet'  ? 'bg-violet-500/15 text-violet-300' :
     color === 'cyan'    ? 'bg-cyan-500/10 text-cyan-400' :
     color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' :
     color === 'red'     ? 'bg-red-500/10 text-red-400' :
     color === 'amber'   ? 'bg-amber-500/10 text-amber-400' :
+    color === 'gold'    ? 'bg-yellow-500/10 text-yellow-400' :
     color === 'purple'  ? 'bg-purple-500/10 text-purple-400' :
     color === 'orange'  ? 'bg-orange-500/10 text-orange-400' :
     color === 'blue'    ? 'bg-blue-500/10 text-blue-400' :
-                          'bg-cyan-500/10 text-cyan-400';
+                          'bg-violet-500/15 text-violet-300';
   const valColor =
-    color === 'cyan'    ? 'text-cyan-400' :
+    color === 'violet'  ? 'text-violet-300' :
+    color === 'cyan'    ? 'text-cyan-300' :
     color === 'emerald' ? 'text-emerald-400' :
     color === 'red'     ? 'text-red-400' :
     color === 'amber'   ? 'text-amber-400' :
+    color === 'gold'    ? 'gold-text' :
     color === 'purple'  ? 'text-purple-400' :
     color === 'orange'  ? 'text-orange-400' :
     color === 'blue'    ? 'text-blue-400' :
-                          'text-cyan-400';
+                          'text-violet-300';
+  const sparkStroke = sparkColor ||
+    (color === 'violet'  ? '#8b5cf6' :
+     color === 'gold'    ? '#f59e0b' :
+     color === 'emerald' ? '#10b981' :
+     color === 'red'     ? '#ef4444' : '#8b5cf6');
   return (
-    <div className={`bg-[#0a1628]/60 backdrop-blur border ${border} rounded-xl p-3.5 flex flex-col gap-2 shadow-lg ${glow} transition-all duration-200`}>
-      <div className="flex items-center justify-between">
-        <p className="text-slate-600 text-[10px] font-semibold uppercase tracking-widest">{label}</p>
-        {Icon && (
-          <div className={`relative w-6 h-6 rounded-lg flex items-center justify-center ${iconBg}`}>
-            <Icon className="w-3 h-3" />
-            {heat > 70 && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+    <div className={`bg-[#100d26]/70 backdrop-blur border ${border} rounded-xl overflow-hidden flex flex-col gap-0 shadow-lg transition-all duration-200`}>
+      {/* Premium top accent bar */}
+      <div className={`h-px bg-gradient-to-r ${topBar}`} />
+      <div className="p-3.5 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest">{label}</p>
+          {Icon && (
+            <div className={`relative w-7 h-7 rounded-lg flex items-center justify-center ${iconBg}`}>
+              <Icon className="w-3.5 h-3.5" />
+              {heat > 70 && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+            </div>
+          )}
+        </div>
+        {goldValue
+          ? <p className={`text-xl font-black font-mono tabular-nums leading-none gold-text`}>{value}</p>
+          : <p className={`text-xl font-black font-mono tabular-nums leading-none ${valColor}`}>{value}</p>
+        }
+        {sparkData && sparkData.length > 1 && (
+          <div className="h-8 -mx-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sparkData}>
+                <Line dataKey="v" stroke={sparkStroke} dot={false} strokeWidth={1.5} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        {(sub || trend !== undefined) && (
+          <div className="flex items-center justify-between">
+            {sub && <p className="text-[10px] text-slate-600">{sub}</p>}
+            {trend !== undefined && (
+              <span className={`text-xs font-semibold flex items-center gap-0.5 ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {Math.abs(trend).toFixed(1)}%
+              </span>
+            )}
           </div>
         )}
       </div>
-      <p className={`text-xl font-black font-mono tabular-nums ${valColor} leading-none`}>{value}</p>
-      {sparkData && sparkData.length > 1 && (
-        <div className="h-8 -mx-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sparkData}>
-              <Line dataKey="v" stroke={sparkColor || '#22d3ee'} dot={false} strokeWidth={1.5} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-      {(sub || trend !== undefined) && (
-        <div className="flex items-center justify-between">
-          {sub && <p className="text-[10px] text-slate-600">{sub}</p>}
-          {trend !== undefined && (
-            <span className={`text-xs font-semibold flex items-center gap-0.5 ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {Math.abs(trend).toFixed(1)}%
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -290,9 +310,10 @@ function RefreshBtn({ onClick, loading, label = 'Atualizar' }) {
 }
 
 const CHART_STYLE = {
-  contentStyle: { background: '#070e1c', border: '1px solid #0e2d4a', borderRadius: '10px', fontSize: 11, fontFamily: 'ui-monospace, monospace' },
-  itemStyle: { color: '#22d3ee' },
+  contentStyle: { background: '#0e0b20', border: '1px solid #2d1f6e', borderRadius: '12px', fontSize: 11, fontFamily: 'ui-monospace, monospace', padding: '10px 14px' },
+  itemStyle: { color: '#a78bfa' },
 };
+const CHART_COLORS = ['#8b5cf6','#06b6d4','#f59e0b','#10b981','#f97316','#ec4899','#3b82f6','#84cc16'];
 
 // ─── main component ──────────────────────────────────────────────────────────
 
@@ -583,35 +604,37 @@ export default function HyperliquidPro() {
   // ── render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-white">
+    <div className="min-h-screen bg-[#080615] text-white">
       <style>{`
         ::-webkit-scrollbar { width:4px; height:4px; }
         ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:#0e2d4a; border-radius:8px; }
-        ::-webkit-scrollbar-thumb:hover { background:#1a4a72; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-        .fade-in { animation: fadeIn 0.25s ease both; }
+        ::-webkit-scrollbar-thumb { background:#2d1f6e; border-radius:8px; }
+        ::-webkit-scrollbar-thumb:hover { background:#4c1d95; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease both; }
         .no-scrollbar { scrollbar-width:none; }
         .no-scrollbar::-webkit-scrollbar { display:none; }
       `}</style>
 
       {/* ═══ HEADER ═══════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 border-b border-cyan-900/20 bg-[#040912]/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-violet-900/30 bg-[#060412]/85 backdrop-blur-xl">
+        {/* Ultra-thin rainbow accent line at very top */}
+        <div className="h-px bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500" />
         <div className="max-w-screen-2xl mx-auto px-4">
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                <Activity className="w-3.5 h-3.5 text-black" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/40 ring-1 ring-violet-400/20">
+                <Activity className="w-4 h-4 text-white" />
               </div>
               <div className="leading-tight">
-                <p className="font-black text-sm tracking-tight">Hyperliquid Pro</p>
-                <p className="text-[10px] text-slate-600 font-medium">Whale Tracker</p>
+                <p className="font-black text-sm tracking-tight violet-text">Hyperliquid Pro</p>
+                <p className="text-[10px] text-slate-600 font-medium tracking-wider uppercase">Whale Tracker</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-slate-500">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/5 border border-violet-500/10 text-[10px] font-mono text-slate-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 ambient-glow" />
                 {now.toLocaleTimeString('pt-BR')}
               </div>
 
@@ -629,16 +652,16 @@ export default function HyperliquidPro() {
               </div>
 
               <button onClick={loadWhalesData} disabled={loading}
-                className="p-1.5 rounded-lg hover:bg-cyan-500/10 text-slate-500 hover:text-cyan-400 transition-all">
+                className="p-1.5 rounded-lg hover:bg-violet-500/10 text-slate-500 hover:text-violet-400 transition-all">
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               </button>
 
-              <button className="p-1.5 rounded-lg hover:bg-cyan-500/10 text-slate-500 hover:text-cyan-400 transition-all">
+              <button className="p-1.5 rounded-lg hover:bg-violet-500/10 text-slate-500 hover:text-violet-400 transition-all">
                 <Bell className="w-3.5 h-3.5" />
               </button>
 
               <button onClick={() => { setAddError(null); setShowAddModal(true); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl text-xs font-bold text-cyan-400 transition-all">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 hover:from-violet-600/30 hover:to-fuchsia-600/30 border border-violet-500/40 hover:border-violet-500/70 rounded-xl text-xs font-bold text-violet-300 transition-all">
                 <Plus className="w-3.5 h-3.5" /> Add Wallet
               </button>
             </div>
@@ -652,10 +675,10 @@ export default function HyperliquidPro() {
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all ${
                     active
-                      ? 'border-cyan-400 text-cyan-300'
+                      ? 'border-violet-400 text-violet-200'
                       : 'border-transparent text-slate-600 hover:text-slate-300 hover:border-slate-700'
                   }`}>
-                  <Icon className={`w-3.5 h-3.5 ${active ? 'text-cyan-400' : ''}`} />
+                  <Icon className={`w-3.5 h-3.5 ${active ? 'text-violet-400' : ''}`} />
                   {t.label}
                 </button>
               );
@@ -708,7 +731,7 @@ export default function HyperliquidPro() {
                   {/* HERO — 3 status cards, immediately readable */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-                    {/* Card 1: Direction (what are whales doing RIGHT NOW) */}
+                    {/* Card 1: Direction */}
                     {(() => {
                       const lPct = globalMetrics.totalPositions > 0 ? (globalMetrics.totalLongs / globalMetrics.totalPositions) * 100 : 50;
                       const isBuying  = lPct >= 55;
@@ -720,95 +743,120 @@ export default function HyperliquidPro() {
                         ? `${globalMetrics.totalShorts} apostando em QUEDA`
                         : `${globalMetrics.totalLongs} alta · ${globalMetrics.totalShorts} queda`;
                       return (
-                        <div className={`rounded-2xl p-5 border-l-4 ${
-                          isBuying  ? 'bg-emerald-500/8 border-l-emerald-500 border border-emerald-500/15' :
-                          isSelling ? 'bg-red-500/8 border-l-red-500 border border-red-500/15' :
-                                      'bg-amber-500/8 border-l-amber-500 border border-amber-500/15'
-                        }`}>
-                          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">As baleias estão</p>
-                          <div className={`flex items-center gap-2 mb-1 ${isBuying ? 'text-emerald-400' : isSelling ? 'text-red-400' : 'text-amber-400'}`}>
-                            {isBuying ? <ArrowUpRight className="w-6 h-6" /> : isSelling ? <ArrowDownRight className="w-6 h-6" /> : <Activity className="w-5 h-5" />}
-                            <span className="text-2xl font-black">{label}</span>
-                          </div>
-                          <p className="text-xs text-slate-500">{sub}</p>
-                          {globalMetrics.totalPositions > 0 && (
-                            <div className="mt-3 flex h-2 rounded-full overflow-hidden gap-0.5">
-                              <div className="bg-emerald-500 rounded-l-full transition-all duration-700 relative overflow-hidden" style={{ width: `${lPct}%` }}>
-                                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shine-sweep" />
-                              </div>
-                              <div className="bg-red-500 rounded-r-full flex-1 transition-all duration-700" />
+                        <div className={`rounded-2xl overflow-hidden border ${
+                          isBuying  ? 'border-emerald-500/20' :
+                          isSelling ? 'border-red-500/20' :
+                                      'border-amber-500/20'
+                        } bg-[#100d26]/70`}>
+                          <div className={`h-0.5 ${isBuying ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400 to-emerald-600/0' : isSelling ? 'bg-gradient-to-r from-red-600/0 via-red-400 to-red-600/0' : 'bg-gradient-to-r from-amber-600/0 via-amber-400 to-amber-600/0'}`} />
+                          <div className="p-5">
+                            <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3">As baleias estão</p>
+                            <div className={`flex items-center gap-2 mb-2 ${isBuying ? 'text-emerald-400' : isSelling ? 'text-red-400' : 'text-amber-400'}`}>
+                              {isBuying ? <ArrowUpRight className="w-7 h-7" /> : isSelling ? <ArrowDownRight className="w-7 h-7" /> : <Activity className="w-6 h-6" />}
+                              <span className={`text-2xl font-black ${isBuying ? 'emerald-grad-text' : isSelling ? 'red-grad-text' : 'text-amber-400'}`}>{label}</span>
                             </div>
-                          )}
+                            <p className="text-xs text-slate-500">{sub}</p>
+                            {globalMetrics.totalPositions > 0 && (
+                              <div className="mt-3 flex h-1.5 rounded-full overflow-hidden gap-0.5">
+                                <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-l-full transition-all duration-700 relative overflow-hidden" style={{ width: `${lPct}%` }}>
+                                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent shine-sweep" />
+                                </div>
+                                <div className="bg-gradient-to-r from-red-500 to-red-400 rounded-r-full flex-1 transition-all duration-700" />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })()}
 
                     {/* Card 2: PnL */}
-                    <div className={`rounded-2xl p-5 border ${globalMetrics.totalPnl >= 0 ? 'bg-emerald-500/5 border-emerald-500/15' : 'bg-red-500/5 border-red-500/15'}`}>
-                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">
-                        {globalMetrics.totalPnl >= 0 ? 'Em Lucro Agora' : 'Em Prejuízo Agora'}
-                      </p>
-                      <p className={`text-3xl font-black font-mono tabular-nums ${globalMetrics.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {globalMetrics.totalPnl >= 0 ? '+' : ''}{fmt(globalMetrics.totalPnl)}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1 font-mono">
-                        {globalMetrics.totalValue > 0
-                          ? `${((globalMetrics.totalPnl / globalMetrics.totalValue) * 100).toFixed(2)}% do capital`
-                          : 'sem capital'}
-                      </p>
-                      {pnlHistory.length > 1 && (
-                        <div className="h-8 -mx-1 mt-2">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={pnlHistory}>
-                              <Line dataKey="v" stroke={globalMetrics.totalPnl >= 0 ? '#10b981' : '#ef4444'} dot={false} strokeWidth={1.5} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      )}
+                    <div className={`rounded-2xl overflow-hidden border ${globalMetrics.totalPnl >= 0 ? 'border-emerald-500/20' : 'border-red-500/20'} bg-[#100d26]/70`}>
+                      <div className={`h-0.5 ${globalMetrics.totalPnl >= 0 ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400 to-emerald-600/0' : 'bg-gradient-to-r from-red-600/0 via-red-400 to-red-600/0'}`} />
+                      <div className="p-5">
+                        <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3">
+                          {globalMetrics.totalPnl >= 0 ? 'Em Lucro Agora' : 'Em Prejuízo Agora'}
+                        </p>
+                        <p className={`text-3xl font-black font-mono tabular-nums leading-none ${globalMetrics.totalPnl >= 0 ? 'emerald-grad-text' : 'red-grad-text'}`}>
+                          {globalMetrics.totalPnl >= 0 ? '+' : ''}{fmt(globalMetrics.totalPnl)}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2 font-mono">
+                          {globalMetrics.totalValue > 0
+                            ? `${((globalMetrics.totalPnl / globalMetrics.totalValue) * 100).toFixed(2)}% do capital`
+                            : 'sem capital'}
+                        </p>
+                        {pnlHistory.length > 1 && (
+                          <div className="h-8 -mx-1 mt-2">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={pnlHistory}>
+                                <Line dataKey="v" stroke={globalMetrics.totalPnl >= 0 ? '#10b981' : '#ef4444'} dot={false} strokeWidth={1.5} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Card 3: Capital */}
-                    <div className="rounded-2xl p-5 bg-[#0a1628]/60 border border-cyan-900/20">
-                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">Capital Total</p>
-                      <p className="text-3xl font-black font-mono tabular-nums text-cyan-400">{fmt(globalMetrics.totalValue)}</p>
-                      <p className="text-xs text-slate-500 mt-1">{globalMetrics.totalWhales} baleias · {globalMetrics.totalPositions} posições</p>
-                      {valueHistory.length > 1 && (
-                        <div className="h-8 -mx-1 mt-2">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={valueHistory}>
-                              <Line dataKey="v" stroke="#22d3ee" dot={false} strokeWidth={1.5} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      )}
+                    {/* Card 3: Capital — gold gradient */}
+                    <div className="rounded-2xl overflow-hidden border border-amber-500/20 bg-[#100d26]/70">
+                      <div className="h-0.5 bg-gradient-to-r from-amber-600/0 via-amber-400 to-amber-600/0" />
+                      <div className="p-5">
+                        <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3">Capital Total</p>
+                        <p className="text-3xl font-black font-mono tabular-nums leading-none gold-text">{fmt(globalMetrics.totalValue)}</p>
+                        <p className="text-xs text-slate-600 mt-2">{globalMetrics.totalWhales} baleias · {globalMetrics.totalPositions} posições</p>
+                        {valueHistory.length > 1 && (
+                          <div className="h-8 -mx-1 mt-2">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={valueHistory}>
+                                <Line dataKey="v" stroke="#f59e0b" dot={false} strokeWidth={1.5} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* NARRATIVE — plain language, readable by anyone */}
                   {narrative && (
-                    <div className={`px-4 py-4 rounded-xl border ${
-                      narrative.color === 'emerald' ? 'bg-emerald-500/5 border-emerald-500/15' :
-                      narrative.color === 'red'     ? 'bg-red-500/5 border-red-500/15' :
-                      narrative.color === 'amber'   ? 'bg-amber-500/5 border-amber-500/15' :
-                                                      'bg-cyan-500/5 border-cyan-500/15'
-                    }`}>
-                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-1.5">O que está acontecendo agora</p>
-                      <p className={`text-sm leading-relaxed ${
-                        narrative.color === 'emerald' ? 'text-emerald-200' :
-                        narrative.color === 'red'     ? 'text-red-200' :
-                        narrative.color === 'amber'   ? 'text-amber-200' :
-                                                        'text-cyan-200'
-                      }`}>{narrative.emoji} {narrative.text}</p>
+                    <div className={`rounded-xl overflow-hidden border ${
+                      narrative.color === 'emerald' ? 'border-emerald-500/20' :
+                      narrative.color === 'red'     ? 'border-red-500/20' :
+                      narrative.color === 'amber'   ? 'border-amber-500/20' :
+                                                      'border-violet-500/20'
+                    } bg-[#100d26]/50`}>
+                      <div className={`h-0.5 ${
+                        narrative.color === 'emerald' ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400 to-emerald-600/0' :
+                        narrative.color === 'red'     ? 'bg-gradient-to-r from-red-600/0 via-red-400 to-red-600/0' :
+                        narrative.color === 'amber'   ? 'bg-gradient-to-r from-amber-600/0 via-amber-400 to-amber-600/0' :
+                                                        'bg-gradient-to-r from-violet-600/0 via-violet-400 to-violet-600/0'
+                      }`} />
+                      <div className="px-4 py-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                            narrative.color === 'emerald' ? 'bg-emerald-400' :
+                            narrative.color === 'red'     ? 'bg-red-400' :
+                            narrative.color === 'amber'   ? 'bg-amber-400' : 'bg-violet-400'
+                          }`} />
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">O que está acontecendo agora</p>
+                        </div>
+                        <p className={`text-sm leading-relaxed font-medium ${
+                          narrative.color === 'emerald' ? 'text-emerald-200/90' :
+                          narrative.color === 'red'     ? 'text-red-200/90' :
+                          narrative.color === 'amber'   ? 'text-amber-200/90' :
+                                                          'text-violet-200/90'
+                        }`}>{narrative.emoji} {narrative.text}</p>
+                      </div>
                     </div>
                   )}
 
                   {/* POSITIONS GRID — one tile per open position */}
                   {globalMetrics.totalPositions > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                        Posições Abertas Agora ({globalMetrics.totalPositions})
-                      </p>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 ambient-glow" />
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Posições Abertas Agora ({globalMetrics.totalPositions})</p>
+                        <div className="h-px flex-1 bg-gradient-to-r from-violet-500/30 to-transparent" />
+                      </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                         {whalesData.flatMap((w, wi) =>
                           (w.active_positions || []).map((p, pi) => {
@@ -816,22 +864,28 @@ export default function HyperliquidPro() {
                             const positivePnl = (p.unrealized_pnl || 0) >= 0;
                             return (
                               <div key={`${wi}-${pi}`}
-                                className={`rounded-xl p-3.5 border transition-all ${
+                                className={`rounded-xl overflow-hidden border transition-all ${
                                   isLong
-                                    ? 'bg-emerald-500/5 border-emerald-500/15 hover:border-emerald-500/30'
-                                    : 'bg-red-500/5 border-red-500/15 hover:border-red-500/30'
+                                    ? 'bg-[#0b1c12]/80 border-emerald-500/20 hover:border-emerald-500/40'
+                                    : 'bg-[#1c0b0b]/80 border-red-500/20 hover:border-red-500/40'
                                 }`}>
-                                <div className="flex items-start justify-between mb-1.5">
-                                  <span className="font-black text-white text-base leading-none">{p.coin}</span>
-                                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isLong ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                    {isLong ? '▲ LONG' : '▼ SHORT'}
-                                  </span>
+                                <div className={`h-0.5 ${isLong ? 'bg-gradient-to-r from-emerald-600/0 via-emerald-400/80 to-emerald-600/0' : 'bg-gradient-to-r from-red-600/0 via-red-400/80 to-red-600/0'}`} />
+                                <div className="p-3">
+                                  <div className="flex items-start justify-between mb-1.5">
+                                    <span className="font-black text-white text-base leading-none">{p.coin}</span>
+                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isLong ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                      {isLong ? '▲' : '▼'}
+                                    </span>
+                                  </div>
+                                  <p className={`text-lg font-black font-mono tabular-nums leading-none ${positivePnl ? 'emerald-grad-text' : 'red-grad-text'}`}>
+                                    {positivePnl ? '+' : ''}{fmt(p.unrealized_pnl)}
+                                  </p>
+                                  <p className="text-[10px] text-slate-500 mt-1.5 truncate">{w.nickname || fmtAddr(w.address)}</p>
+                                  <div className="flex items-center justify-between mt-0.5">
+                                    <p className="text-[10px] text-slate-600 font-mono">{fmt(p.position_value)}</p>
+                                    {p.leverage && <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-1 rounded">{p.leverage.toFixed(0)}×</span>}
+                                  </div>
                                 </div>
-                                <p className={`text-lg font-black font-mono tabular-nums leading-none ${positivePnl ? 'text-emerald-400' : 'text-red-400'}`}>
-                                  {positivePnl ? '+' : ''}{fmt(p.unrealized_pnl)}
-                                </p>
-                                <p className="text-[10px] text-slate-500 mt-1.5 truncate">{w.nickname || fmtAddr(w.address)}</p>
-                                <p className="text-[10px] text-slate-600 font-mono">{fmt(p.position_value)}{p.leverage ? ` · ${p.leverage.toFixed(0)}×` : ''}</p>
                               </div>
                             );
                           })
@@ -843,12 +897,13 @@ export default function HyperliquidPro() {
                   {/* WHALE LIST — rich rows with hover tooltip */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest flex items-center gap-2">
-                        <Users className="w-3.5 h-3.5 text-cyan-400" />
-                        Baleias Monitoradas ({whalesData.length})
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5 text-violet-400" />
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Baleias Monitoradas ({whalesData.length})</p>
+                        <div className="h-px w-16 bg-gradient-to-r from-violet-500/30 to-transparent" />
+                      </div>
                       <button onClick={() => { setAddError(null); setShowAddModal(true); }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
+                        className="flex items-center gap-1 text-[10px] font-bold text-violet-400 hover:text-violet-300 transition-colors">
                         <Plus className="w-3 h-3" /> Adicionar
                       </button>
                     </div>
@@ -868,11 +923,11 @@ export default function HyperliquidPro() {
                                 <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border border-l-2 ${riskBorderLeft(w.liquidation_risk)} ${
                                   isHighRisk
                                     ? 'bg-red-500/5 border-red-500/10 whale-high-risk'
-                                    : 'bg-[#0a1628]/60 border-cyan-900/15'
-                                } hover:bg-[#0d1e3a]/80 transition-all cursor-default`}>
+                                    : 'bg-[#100d26]/60 border-violet-900/20'
+                                } hover:bg-[#160e32]/80 transition-all cursor-default`}>
                                   {/* Avatar */}
-                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black shrink-0 ${
-                                    isHighRisk ? 'bg-red-500/15 text-red-300' : 'bg-cyan-500/10 text-cyan-300'
+                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black shrink-0 ring-1 ${
+                                    isHighRisk ? 'bg-red-500/15 text-red-300 ring-red-500/20' : 'bg-violet-500/10 text-violet-300 ring-violet-500/20'
                                   }`}>
                                     {(w.nickname || w.address || '?').slice(0, 2).toUpperCase()}
                                   </div>
@@ -906,7 +961,7 @@ export default function HyperliquidPro() {
                                   </div>
                                   {/* Right metrics */}
                                   <div className="text-right shrink-0">
-                                    <p className="font-black font-mono tabular-nums text-emerald-400 text-sm">{fmt(w.account_value)}</p>
+                                    <p className="font-black font-mono tabular-nums gold-text text-sm">{fmt(w.account_value)}</p>
                                     <p className={`font-bold font-mono tabular-nums text-xs ${pnlPos ? 'text-emerald-400' : 'text-red-400'}`}>
                                       {pnlPos ? '+' : ''}{fmt(w.unrealized_pnl)} <span className="text-[10px] opacity-70">({pnlPos ? '+' : ''}{pnlPct.toFixed(2)}%)</span>
                                     </p>
@@ -1017,13 +1072,15 @@ export default function HyperliquidPro() {
 
                 {/* ── RIGHT COLUMN (1/3) — Activity Feed ─────────────────── */}
                 <div className="space-y-4">
-                  <div className="bg-[#0a1628]/60 border border-cyan-900/20 rounded-xl p-4 xl:sticky xl:top-20">
+                  <div className="bg-[#100d26]/60 border border-violet-900/25 rounded-xl overflow-hidden xl:sticky xl:top-20">
+                    <div className="h-px bg-gradient-to-r from-violet-600/0 via-violet-500/60 to-violet-600/0" />
+                    <div className="p-4">
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                        Atividade ao Vivo
-                      </p>
-                      <span className="text-[10px] text-slate-600">{activityFeed.length} posições</span>
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 ambient-glow" />
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Atividade ao Vivo</p>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-600 bg-violet-500/5 border border-violet-500/10 px-2 py-0.5 rounded-full">{activityFeed.length} pos.</span>
                     </div>
                     <div className="space-y-2 max-h-[70vh] overflow-y-auto no-scrollbar">
                       {activityFeed.length === 0
@@ -1142,7 +1199,8 @@ export default function HyperliquidPro() {
                         ))
                       }
                     </div>
-                  </div>
+                  </div>{/* end p-4 */}
+                  </div>{/* end panel */}
                 </div>
 
               </div>
