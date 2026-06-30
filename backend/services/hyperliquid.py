@@ -282,6 +282,11 @@ async def fetch_whale_data(address: str, nickname: str = None) -> dict:
             raw_orders = orders_resp.json() if orders_resp.status_code == 200 else []
             market_prices = _cache.get("market_prices", {})
 
+            # Extract account-level summary from clearinghouseState
+            margin_summary = data.get("crossMarginSummary", {})
+            account_value = safe_float(margin_summary.get("accountValue", 0))
+            total_margin_used = safe_float(margin_summary.get("totalMarginUsed", 0))
+
             positions = []
             for pos in data.get("assetPositions", []):
                 if "position" not in pos:
@@ -289,17 +294,33 @@ async def fetch_whale_data(address: str, nickname: str = None) -> dict:
                 p = pos["position"]
                 coin = p.get("coin", "")
                 mark_px = market_prices.get(coin, 0)
+                szi = safe_float(p.get("szi", "0"))
+                pos_value = safe_float(p.get("positionValue", "0"))
+                unreal_pnl = safe_float(p.get("unrealizedPnl", "0"))
+                liq_px = safe_float(p.get("liquidationPx", "0") or "0")
+                entry_px = safe_float(p.get("entryPx", "0"))
+                lev_raw = p.get("leverage", {})
+                leverage_value = safe_float(lev_raw.get("value", 1) if isinstance(lev_raw, dict) else lev_raw, 1) or 1
+
                 positions.append({
+                    # camelCase — used internally by alert logic
                     "coin": coin,
-                    "side": "LONG" if safe_float(p.get("szi", "0")) > 0 else "SHORT",
-                    "size": abs(safe_float(p.get("szi", 0))),
+                    "side": "LONG" if szi > 0 else "SHORT",
+                    "size": abs(szi),
                     "szi": p.get("szi", "0"),
                     "entryPx": p.get("entryPx", "0"),
                     "positionValue": p.get("positionValue", "0"),
                     "unrealizedPnl": p.get("unrealizedPnl", "0"),
-                    "leverage": p.get("leverage", {}),
+                    "leverage": lev_raw,
                     "liquidationPx": p.get("liquidationPx", "0"),
                     "markPx": str(mark_px),
+                    # snake_case aliases — consumed by the React frontend
+                    "position_value": pos_value,
+                    "unrealized_pnl": unreal_pnl,
+                    "entry_px": entry_px,
+                    "liquidation_px": liq_px,
+                    "mark_px": mark_px,
+                    "leverage_value": leverage_value,
                 })
 
             orders = [
@@ -309,11 +330,32 @@ async def fetch_whale_data(address: str, nickname: str = None) -> dict:
                     "sz": o.get("sz", "0"),
                     "limitPx": o.get("limitPx", "0"),
                     "oid": o.get("oid", ""),
+                    # snake_case aliases for frontend
+                    "limit_px": safe_float(o.get("limitPx", "0")),
+                    "size": safe_float(o.get("sz", "0")),
                 }
                 for o in (raw_orders if isinstance(raw_orders, list) else [])
             ]
 
             total_value = sum(abs(safe_float(p.get("positionValue", 0))) for p in positions)
+            total_unrealized_pnl = sum(safe_float(p.get("unrealizedPnl", 0)) for p in positions)
+            margin_usage_pct = (total_margin_used / account_value * 100) if account_value > 0 else 0.0
+
+            # Classify liquidation risk based on distance of any position to its liquidation price
+            min_liq_dist = 100.0
+            for p in positions:
+                liq_px = safe_float(p.get("liquidationPx", "0") or "0")
+                mark = safe_float(p.get("markPx", "0"))
+                if liq_px > 0 and mark > 0:
+                    dist = abs((mark - liq_px) / mark) * 100
+                    min_liq_dist = min(min_liq_dist, dist)
+
+            if positions and min_liq_dist < 5:
+                liquidation_risk = "Alto"
+            elif positions and min_liq_dist < 20:
+                liquidation_risk = "Médio"
+            else:
+                liquidation_risk = "Baixo"
 
             if not nickname:
                 nickname = _known_whales.get(address, f"Whale {address[:6]}")
@@ -323,12 +365,22 @@ async def fetch_whale_data(address: str, nickname: str = None) -> dict:
             whale_data = {
                 "address": address,
                 "nickname": nickname,
+                # camelCase fields (kept for alert/DB logic)
                 "positions": positions,
                 "orders": orders,
                 "total_positions": len(positions),
                 "total_orders": len(orders),
                 "total_position_value": total_value,
                 "metrics": metrics,
+                # snake_case top-level fields expected by the React frontend
+                "active_positions": positions,
+                "positions_count": len(positions),
+                "account_value": account_value,
+                "unrealized_pnl": total_unrealized_pnl,
+                "total_position_value_usd": total_value,
+                "margin_usage": round(margin_usage_pct, 2),
+                "liquidation_risk": liquidation_risk,
+                "portfolio_heat": metrics.get("portfolio_heat") or round(margin_usage_pct, 2),
                 "last_update": datetime.now().isoformat(),
             }
 
