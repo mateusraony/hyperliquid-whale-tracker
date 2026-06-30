@@ -177,8 +177,14 @@ async def get_market_sentiment():
         reverse=True,
     )
 
-    scores_resp = await get_whale_intelligence_scores()
-    top_3 = scores_resp.get("top_3", [])
+    # Divergences require DB (whale scores); skip gracefully when DB is unavailable
+    top_3 = []
+    if db.db_pool:
+        try:
+            scores_resp = await get_whale_intelligence_scores()
+            top_3 = scores_resp.get("top_3", [])
+        except Exception:
+            top_3 = []
     divergences = []
     for tw in top_3:
         addr = tw["address"]
@@ -218,9 +224,6 @@ async def get_market_sentiment():
 
 @router.get("/api/ai/whale-correlation")
 async def get_whale_correlation():
-    if not db.db_pool:
-        raise HTTPException(status_code=503, detail="Banco de dados não conectado.")
-
     whales = _cache.get("whales") or await fetch_all_whales()
     _cache["whales"] = whales
 
