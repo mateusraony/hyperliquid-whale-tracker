@@ -34,8 +34,8 @@ code {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-.violet-text {
-  background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 100%);
+.sky-grad-text {
+  background: linear-gradient(135deg, #7dd3fc 0%, #0ea5e9 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
