@@ -15,7 +15,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #060b14;
+  background-color: #080615;
 }
 
 code {
@@ -27,6 +27,33 @@ code {
   min-height: 100vh;
 }
 
+/* ── gradient text utilities ─────────────────────────────────── */
+.gold-text {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 55%, #fcd34d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.violet-text {
+  background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.emerald-grad-text {
+  background: linear-gradient(135deg, #6ee7b7 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.red-grad-text {
+  background: linear-gradient(135deg, #fca5a5 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── animations ───────────────────────────────────────────────── */
 @keyframes shineSweep {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(400%); }
@@ -39,11 +66,18 @@ code {
 }
 .whale-high-risk { animation: riskPulse 3s ease-in-out infinite; }
 
+@keyframes ambientGlow {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+.ambient-glow { animation: ambientGlow 3s ease-in-out infinite; }
+
 @keyframes tickerScroll {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 
+/* ── scanline texture ─────────────────────────────────────────── */
 body::after {
   content: '';
   position: fixed;
